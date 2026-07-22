@@ -71,8 +71,8 @@ export function LauncherPage() {
       </div>
 
       <div className="flex flex-col gap-5">
-        {/* Финансовая аналитика (1С): full — блок, gated — гейт-карточка, off — скрыто */}
-        {HAS_ONEC ? (
+        {/* Финансовая аналитика (1С) — только full; в gated гейт-карточка внизу */}
+        {HAS_ONEC && (
         <div className="rounded-[24px] bg-white">
           {/* Шапка блока */}
           <div className="flex flex-wrap items-center justify-between gap-4 px-7 pb-5 pt-6">
@@ -151,9 +151,7 @@ export function LauncherPage() {
             </div>
           </div>
         </div>
-        ) : ONEC_GATED ? (
-          <OnecGate />
-        ) : null}
+        )}
 
         {/* ЭСФ / Налоги / Отчёты — кликабельные блоки-разделы */}
         <div className="grid grid-cols-3 gap-5">
@@ -266,6 +264,9 @@ export function LauncherPage() {
           <div className="mt-3 text-[14px] text-[#9DA4A8]">Прогноз по данным учёта из 1С</div>
         </Card>
         )}
+
+        {/* Гейт «Аналитика 1С» (gated) — внизу страницы */}
+        {ONEC_GATED && <OnecGate />}
       </div>
     </div>
   );
