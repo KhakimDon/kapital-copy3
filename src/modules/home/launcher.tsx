@@ -3,6 +3,7 @@ import { ChevronRight, ChevronDown, RotateCw, LineChart } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { HAS_ONEC, ONEC_GATED } from "@/config/edition";
 import { OnecGate } from "./onec-gate";
+import { BankAccounts } from "./bank-accounts";
 
 /**
  * «Аналитика бизнеса» — главный экран mini-app в ДБО Kapital Business.
@@ -71,8 +72,8 @@ export function LauncherPage() {
       </div>
 
       <div className="flex flex-col gap-5">
-        {/* Финансовая аналитика (1С) — только full; в gated гейт-карточка внизу */}
-        {HAS_ONEC && (
+        {/* full — блок фин.аналитики (1С); иначе (gated/off) — «Счета» из банка (без 1С) */}
+        {HAS_ONEC ? (
         <div className="rounded-[24px] bg-white">
           {/* Шапка блока */}
           <div className="flex flex-wrap items-center justify-between gap-4 px-7 pb-5 pt-6">
@@ -151,6 +152,8 @@ export function LauncherPage() {
             </div>
           </div>
         </div>
+        ) : (
+          <BankAccounts />
         )}
 
         {/* ЭСФ / Налоги / Отчёты — кликабельные блоки-разделы */}
