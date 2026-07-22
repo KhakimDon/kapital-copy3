@@ -1,0 +1,356 @@
+/*
+ * Telegram surface theme — the REAL Telegram Web A ("A" client) design system,
+ * ported 1:1 to our stack. Values are lifted straight from the reference
+ * `styles/themes.json` (light = index 0, dark = index 1). Everything is scoped
+ * under `.tg-surface` so it never leaks into the rest of the app; dark activates
+ * when the host toggles `.dark` on <html>.
+ *
+ * Two token layers live on the surface:
+ *   • the real `--color-*` tokens (imported from _foundation/tg-vars.css) — the
+ *     authoritative Telegram palette, usable directly by newly-ported components;
+ *   • the shorthand `--tg-*` tokens below — a stable alias layer the existing
+ *     components consume via Tailwind arbitrary values, e.g.
+ *       bg-[var(--tg-out-bg)]  text-[var(--tg-meta)]  rounded-[var(--tg-radius)]
+ *     each aliased to its real `--color-*` counterpart.
+ *
+ * The dark theme is the real "A" palette — neutral #212121 / #0f0f0f panels with
+ * the signature Telegram violet accent (#8774e1) and a violet own-bubble
+ * (#766ac8) — NOT the blue "Night" palette of the classic client.
+ */
+
+@import "./_foundation/tg-vars.css";
+
+.tg-surface {
+  /* panels (sidebar / header / composer) */
+  --tg-panel: #ffffff;
+  --tg-panel-2: #f4f4f5;
+  --tg-secondary: #f4f4f5;
+
+  /* bubbles */
+  --tg-in-bg: #ffffff;
+  --tg-in-bg-selected: #ebf3fd;
+  --tg-out-bg: #eeffde;
+  --tg-out-bg-selected: #d0ffac;
+
+  /* text */
+  --tg-text: #000000;
+  --tg-text-secondary: #707579;
+  --tg-meta: #686c72;      /* timestamps on incoming */
+  --tg-meta-own: #4fae4e;  /* timestamps + ticks on outgoing (color-message-meta-own) */
+  --tg-placeholder: #a2acb4;
+
+  /* accents */
+  --tg-primary: #3390ec;
+  --tg-primary-rgb: 51, 144, 236;
+  --tg-link: #3390ec;
+  --tg-border: #dadce0;
+  --tg-divider: #ededf0;
+  --tg-hover: #f4f4f5;
+  --tg-active: #ededed;
+
+  /* selected chat row in the list (real A inverts the row to white text) */
+  --tg-row-active: #3390ec;
+  --tg-row-active-text: #ffffff;
+
+  /* unread count badge — real TG uses the green "active" colour when unmuted */
+  --tg-unread: #00c73e;
+  --tg-unread-muted: #b6bcc3;
+
+  /* Compact popup menus (tgweb-menu.css) — the real Telegram values are
+   * translucent + backdrop-blur, but the menus animate with a `transform` on an
+   * ancestor which disables `backdrop-filter` in Chromium, so the blur can't be
+   * relied on. Make the fill nearly opaque so menu text is always readable; the
+   * blur stays as a progressive enhancement where it does work. */
+  --color-background-compact-menu: rgba(255, 255, 255, 0.98);
+  --color-background-compact-menu-reactions: rgba(255, 255, 255, 0.98);
+
+  /* reactions / pills */
+  --tg-reaction: #ebf3fd;
+  --tg-reaction-own: #c6eab2;
+  --tg-pill: rgba(0, 0, 0, 0.4);       /* floating date / "select chat" pill */
+  --tg-pill-text: #ffffff;
+
+  /* chat wallpaper base (behind the pattern layer) */
+  --tg-wallpaper-bg: #dce6d5;
+
+  /* geometry (real: --border-radius-messages / -small) */
+  --tg-radius: 0.9375rem;   /* 15px — Telegram message radius */
+  --tg-radius-sm: 0.375rem; /* 6px  — tight corner on grouped messages */
+  --tg-bubble-shadow: 0 1px 2px rgba(16, 35, 47, 0.08);
+
+  /* ── real Telegram Web A layout/radius/shadow tokens (from _variables.scss),
+   *    used by the faithfully-ported components (tgweb-*.css) ──────────────── */
+  --border-radius-messages: 0.9375rem;        /* 15px */
+  --border-radius-messages-small: 0.375rem;   /* 6px  */
+  --border-radius-default: 1rem;
+  --border-radius-default-small: 0.625rem;
+  --border-radius-default-tiny: 0.375rem;
+  --messages-container-width: 47.5rem;
+  --middle-header-height: 3rem;
+  --column-header-height: 3.5rem;
+  --message-text-size: 1rem;
+  --shadow-pane: 0 1px 5px -1px rgba(0, 0, 0, 0.21);
+  --shadow-footer: 0 1px 8px 1px rgba(0, 0, 0, 0.12);
+  --shadow-island: 0 1px 4px 0 #0000000d;
+  --color-text-meta-rgb: 104, 108, 114;
+
+  color: var(--tg-text);
+  font-feature-settings: "tnum";
+}
+
+/* ── Dark ("A" neutral + violet) ─────────────────────────────────────────── */
+.dark .tg-surface {
+  --tg-panel: #212121;
+  --tg-panel-2: #2c2c2c;
+  --tg-secondary: #2c2c2c;
+
+  --tg-in-bg: #212121;
+  --tg-in-bg-selected: #2b2a35;
+  --tg-out-bg: #766ac8;
+  --tg-out-bg-selected: #6549d4;
+
+  --tg-text: #ffffff;
+  --tg-text-secondary: #aaaaaa;
+  --tg-meta: rgba(255, 255, 255, 0.5);
+  --tg-meta-own: rgba(255, 255, 255, 0.65);
+  --tg-placeholder: #72767a;
+
+  --tg-primary: #8774e1;
+  --tg-primary-rgb: 135, 116, 225;
+  --tg-link: #8774e1;
+  --tg-border: #303030;
+  --tg-divider: #303030;
+  --tg-hover: #2c2c2c;
+  --tg-active: #292929;
+
+  --tg-row-active: #8774e1;
+  --tg-row-active-text: #ffffff;
+
+  --tg-unread: #8774e1;
+  --tg-unread-muted: #5a5a5a;
+
+  --tg-reaction: #2b2a35;
+  --tg-reaction-own: #675caf;
+  --tg-pill: rgba(0, 0, 0, 0.4);
+
+  --tg-wallpaper-bg: #0f0f0f;
+
+  --tg-bubble-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+
+  /* meta over incoming bubbles reads light in dark */
+  --color-text-meta-rgb: 170, 170, 170;
+
+  /* nearly-opaque dark menu fill (see the light note above) */
+  --color-background-compact-menu: rgba(30, 30, 30, 0.98);
+  --color-background-compact-menu-reactions: rgba(30, 30, 30, 0.98);
+}
+
+/* ── Wallpaper (chat background) — the REAL Telegram Web A mechanism ────────
+ * A base color, then two stacked pattern layers:
+ *   • light: the `chat-bg-br.png` photo (cover) + the `pattern.svg` doodle tile
+ *     repeated at 430px, opacity .4, mix-blend soft-light;
+ *   • dark:  a violet gradient MASKED by the same `pattern.svg` (opacity .25),
+ *     so the doodles glow violet over the near-black base.
+ * The layers are absolutely-positioned pseudo-elements behind the pane content
+ * (header / composer carry their own opaque --tg-panel bg; the message list is
+ * transparent and shows the wallpaper). */
+.tg-wallpaper {
+  position: relative;
+  background-color: var(--tg-wallpaper-bg);
+  isolation: isolate;
+}
+.tg-wallpaper::before,
+.tg-wallpaper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+/* photo wallpaper (light theme only) */
+.tg-wallpaper::before {
+  background-image: url("./assets/chat-bg-br.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+.dark .tg-wallpaper::before {
+  background-image: none;
+}
+/* tiled doodle pattern */
+.tg-wallpaper::after {
+  background-image: url("./assets/pattern.svg");
+  background-repeat: repeat;
+  background-position: center;
+  background-size: 430px auto;
+  opacity: 0.4;
+  mix-blend-mode: soft-light;
+}
+.dark .tg-wallpaper::after {
+  opacity: 0.25;
+  background-image: none;
+  background: linear-gradient(145deg, #4f5bd5 0%, #962fbf 35%, #dd6cb9 65%, #fec496 100%);
+  mix-blend-mode: unset;
+  -webkit-mask-image: url("./assets/pattern.svg");
+  mask-image: url("./assets/pattern.svg");
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: 430px auto;
+  mask-size: 430px auto;
+}
+
+/* ── Bubble ───────────────────────────────────────────────────────────────── */
+.tg-bubble {
+  position: relative;
+  border-radius: var(--tg-radius);
+  box-shadow: var(--tg-bubble-shadow);
+  max-width: min(70%, 30rem);
+  width: fit-content;
+}
+.tg-bubble--in {
+  background: var(--tg-in-bg);
+  color: var(--tg-text);
+}
+.tg-bubble--out {
+  background: var(--tg-out-bg);
+  color: var(--tg-text);
+}
+/* Own bubble in dark is the violet fill → its text/meta go light. */
+.dark .tg-bubble--out { color: #ffffff; }
+
+/* First / middle / last in a same-sender group: Telegram tightens the inner
+ * stacked corners and only the last message keeps the tail-side round corner. */
+.tg-bubble--in.tg-bubble--group-first { border-top-left-radius: var(--tg-radius); }
+.tg-bubble--in.tg-bubble--group-mid,
+.tg-bubble--in.tg-bubble--group-last:not(.tg-bubble--tail) { border-top-left-radius: var(--tg-radius-sm); }
+.tg-bubble--in.tg-bubble--group-first:not(.tg-bubble--group-last) { border-bottom-left-radius: var(--tg-radius-sm); }
+.tg-bubble--in.tg-bubble--group-mid { border-bottom-left-radius: var(--tg-radius-sm); }
+
+.tg-bubble--out.tg-bubble--group-mid,
+.tg-bubble--out.tg-bubble--group-last:not(.tg-bubble--tail) { border-top-right-radius: var(--tg-radius-sm); }
+.tg-bubble--out.tg-bubble--group-first:not(.tg-bubble--group-last) { border-bottom-right-radius: var(--tg-radius-sm); }
+.tg-bubble--out.tg-bubble--group-mid { border-bottom-right-radius: var(--tg-radius-sm); }
+
+/* Signature tail — the REAL Telegram appendix shape, rendered as an inline SVG
+ * (.tg-appendix) whose `.tg-appendix-fill` inherits the bubble background so it
+ * matches light/dark/own automatically. Only the last bubble of a group carries
+ * it (.tg-bubble--tail). Fallback: if a component still uses the CSS-only tail,
+ * the bottom-corner rounding below keeps the silhouette correct. */
+.tg-bubble--tail.tg-bubble--in { border-bottom-left-radius: var(--tg-radius); }
+.tg-bubble--tail.tg-bubble--out { border-bottom-right-radius: var(--tg-radius); }
+.tg-appendix {
+  position: absolute;
+  bottom: -1px;
+  width: 9px;
+  height: 20px;
+  z-index: 0;
+}
+.tg-bubble--in .tg-appendix { left: -8px; }
+.tg-bubble--out .tg-appendix { right: -8px; }
+.tg-appendix-fill { fill: var(--tg-in-bg); }
+.tg-bubble--out .tg-appendix-fill { fill: var(--tg-out-bg); }
+
+/* meta (time + ticks) row inside a bubble */
+.tg-meta { color: var(--tg-meta); font-size: 0.6875rem; line-height: 1; white-space: nowrap; user-select: none; }
+.tg-bubble--out .tg-meta { color: var(--tg-meta-own); }
+
+/* ── Meta placement — the REAL Telegram technique (lifted from MessageMeta.scss)
+ * The meta (time + ticks) is ABSOLUTELY positioned at the bubble's bottom-right.
+ * An invisible inline spacer at the END of the text reserves just that corner so
+ * the last line never runs under the meta. Because the spacer is a tiny inline
+ * box (not a right-float), it can't jump to the top of a multi-line message. */
+.tg-text-body {
+  position: relative;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.tg-text-body > .tg-text {
+  unicode-bidi: plaintext;
+}
+/* A paragraph break (blank line in the source) renders as a small gap. */
+.tg-para-gap {
+  display: block;
+  height: 0.4em;
+}
+/* reserves horizontal room on the LAST line for the absolute meta */
+.tg-meta-spacer {
+  display: inline-block;
+  width: var(--tg-meta-w, 3.25rem);
+  height: 1px;
+}
+.tg-meta--abs {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.375rem;
+}
+
+/* highlighted in-chat search hit */
+.tg-mark {
+  background: rgba(var(--tg-primary-rgb), 0.32);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+/* the currently-focused search hit (prev/next target) */
+.tg-bubble--match {
+  box-shadow: 0 0 0 2px rgba(var(--tg-primary-rgb), 0.55), var(--tg-bubble-shadow);
+  animation: tgMatchPulse 900ms ease-out;
+}
+@keyframes tgMatchPulse {
+  0% { box-shadow: 0 0 0 3px rgba(var(--tg-primary-rgb), 0.95), var(--tg-bubble-shadow); }
+  100% { box-shadow: 0 0 0 2px rgba(var(--tg-primary-rgb), 0.55), var(--tg-bubble-shadow); }
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────────────
+ * Only messages that arrive AFTER the initial page get these classes (see the
+ * seen-ids tracking in message-list) so opening a chat doesn't animate history. */
+@keyframes tgMsgIn {
+  from { opacity: 0; transform: translateX(-14px) translateY(2px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes tgMsgOut {
+  from { opacity: 0; transform: translateX(14px) translateY(2px); }
+  to   { opacity: 1; transform: none; }
+}
+.tg-anim-in  { animation: tgMsgIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.tg-anim-out { animation: tgMsgOut 220ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* date pills + empty-state pill: a gentle drop-fade on mount */
+@keyframes tgFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+.tg-fade-in { animation: tgFadeIn 240ms ease-out both; }
+
+/* in-chat search bar reveal */
+@keyframes tgSearchIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+.tg-search-bar { animation: tgSearchIn 180ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tg-anim-in,
+  .tg-anim-out,
+  .tg-fade-in,
+  .tg-search-bar,
+  .tg-bubble--match { animation: none; }
+}
+
+/* the floating centered date / status pill over the wallpaper */
+.tg-pill {
+  background: var(--tg-pill);
+  color: var(--tg-pill-text);
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+}
+
+/* thin Telegram-style scrollbar inside the surface */
+.tg-surface *::-webkit-scrollbar { width: 6px; height: 6px; }
+.tg-surface *::-webkit-scrollbar-thumb { background: rgba(120, 130, 140, 0.4); border-radius: 3px; }
+.tg-surface *::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 140, 0.6); }
+.tg-surface *::-webkit-scrollbar-track { background: transparent; }

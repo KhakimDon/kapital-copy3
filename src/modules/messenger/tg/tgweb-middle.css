@@ -1,0 +1,446 @@
+/*
+ * Telegram Web A — MiddleHeader (the chat's top bar), ported 1:1 from the real
+ * client's `components/middle/MiddleHeader.scss` (+ the `.ChatInfo` / `.HeaderActions`
+ * rules it owns). Every selector is scoped under `.tg-surface` so it can't leak.
+ *
+ * The real `.MiddleHeader` is a floating rounded "island": a centered pill with
+ * `--shadow-pane`, no borders, that hovers over the wallpaper at the top of the
+ * middle column. In the reference it's `position: absolute; top: 0` over the
+ * message list; here we keep it a normal flex child (the messages start below it)
+ * — same silhouette, simpler layout.
+ *
+ * Class names match the source (`.MiddleHeader`, `.back-button`, `.ChatInfo`,
+ * `.info`, `.title`, `.status`, `.typing-status`, `.HeaderActions`, `.Button`)
+ * so the port reads against the original. Sizing tokens below are lifted from
+ * `src/styles/_variables.scss`; color tokens come from `_foundation/tg-vars.css`.
+ */
+
+.tg-surface {
+  /* sizing tokens the MiddleHeader needs (from _variables.scss) */
+  --middle-header-height: 3rem;
+  --messages-container-width: 47.5rem;
+  --middle-panel-inline-padding: 1rem;
+  --shadow-pane: 0 1px 5px -1px rgba(0, 0, 0, 0.21);
+  --z-middle-header: 11;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+}
+
+/* dark: the pane shadow reads as a soft dark halo instead of a drop shadow */
+.dark .tg-surface {
+  --shadow-pane: 0 1px 5px -1px rgba(0, 0, 0, 0.45);
+}
+
+/* ── The floating rounded island ─────────────────────────────────────────── */
+.tg-surface .MiddleHeader {
+  /* The real client floats the header over the message list so messages scroll
+   * UNDER it (position: absolute; top: 0). We do the same: the pane pads its
+   * message list down so the first message clears the header, but older messages
+   * pass behind it — no dead wallpaper band above the conversation. */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-middle-header, 20);
+
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+
+  width: calc(100% - var(--middle-panel-inline-padding) * 2);
+  max-width: calc(var(--messages-container-width) - var(--middle-panel-inline-padding) * 2);
+  height: var(--middle-header-height);
+  margin: 0.75rem auto 0;
+  padding-top: 0.25rem;
+  padding-right: 0.8125rem;
+  padding-bottom: 0.25rem;
+  padding-left: 0.25rem;
+  border-radius: 2rem;
+
+  background: var(--color-background);
+  box-shadow: var(--shadow-pane);
+}
+
+/* mobile back button — a round translucent Button + a little right gutter */
+.tg-surface .MiddleHeader .back-button {
+  position: relative;
+  margin-right: 0.5rem;
+}
+
+/* ── ChatInfo: avatar + (title / status) column ──────────────────────────── */
+.tg-surface .MiddleHeader .ChatInfo {
+  cursor: pointer;
+
+  display: flex;
+  flex-grow: 1;
+  align-items: center;
+  min-width: 0;
+  padding-block: 0.0625rem;
+
+  text-align: left;
+  background: none;
+  border: 0;
+}
+
+.tg-surface .MiddleHeader .ChatInfo .Avatar {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  margin-right: 0.625rem;
+  font-size: 1.0625rem;
+}
+
+.tg-surface .MiddleHeader .ChatInfo .info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  justify-content: center;
+  min-width: 0;
+}
+
+.tg-surface .MiddleHeader .ChatInfo .title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.tg-surface .MiddleHeader h3 {
+  overflow: hidden;
+  margin: 0;
+
+  font-size: 1.125rem;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tg-surface .MiddleHeader .status,
+.tg-surface .MiddleHeader .typing-status {
+  overflow: hidden;
+  margin: 0;
+
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: var(--color-text-secondary);
+}
+
+.tg-surface .MiddleHeader .status.online,
+.tg-surface .MiddleHeader .typing-status {
+  color: var(--color-primary);
+}
+
+/* ── HeaderActions: the right-side icon-Button cluster ────────────────────── */
+.tg-surface .MiddleHeader .HeaderActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+/* Button — round translucent "smaller" (2.5rem circle), per Button.scss */
+.tg-surface .MiddleHeader .Button {
+  cursor: pointer;
+
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+
+  color: var(--color-text-secondary);
+  background: transparent;
+  outline: none;
+
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tg-surface .MiddleHeader .HeaderActions .Button {
+  margin-left: 0.25rem;
+}
+
+.tg-surface .MiddleHeader .Button:hover,
+.tg-surface .MiddleHeader .Button[data-state="open"] {
+  background-color: var(--color-chat-hover);
+}
+
+/* active/toggled state (in-chat search open) → the accent color */
+.tg-surface .MiddleHeader .Button.activated {
+  color: var(--color-primary);
+  background-color: var(--color-chat-hover);
+}
+
+/* ── Title badges: emoji-status / verified / premium / scam / fake ────────────
+ * Sits inside `.title` after the h3 (reference: `.ChatInfo .title .VerifiedIcon`
+ * + the scam/fake `.ChatBadge`). The `.title` is already a flex row; keep the
+ * badges from shrinking and give the h3 room to ellipsis on its own. */
+.tg-surface .MiddleHeader .title > h3 {
+  min-width: 0;
+}
+
+.tg-surface .MiddleHeader .title-badge {
+  flex-shrink: 0;
+  width: 1.1875rem;
+  height: 1.1875rem;
+  margin-left: 0.25rem;
+}
+
+.tg-surface .MiddleHeader .title-badge--verified {
+  color: var(--color-primary);
+}
+
+/* Telegram Premium star — a warm gold, distinct from the accent-blue verified. */
+.tg-surface .MiddleHeader .title-badge--premium {
+  color: #e8a10c;
+}
+
+/* Animated custom emoji-status (premium / collectible) next to the name —
+   shared renderer (TgEmojiStatus); global so header, list and profile all align. */
+.tg-surface .tg-emoji-status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+.tg-surface .tg-emoji-status > img,
+.tg-surface .tg-emoji-status > video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.tg-surface .tg-emoji-status-fallback {
+  flex-shrink: 0;
+  vertical-align: middle;
+  color: #e8a10c;
+}
+
+.tg-surface .MiddleHeader .title-tag {
+  flex-shrink: 0;
+
+  margin-left: 0.375rem;
+  padding: 0 0.25rem;
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-semibold);
+  line-height: 0.9375rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.tg-surface .MiddleHeader .title-tag--scam,
+.tg-surface .MiddleHeader .title-tag--fake {
+  color: #e5484d;
+}
+
+/* ── Animated typing / connection dots ───────────────────────────────────────
+ * Three blinking dots that trail a `.typing-status` (someone typing) or a
+ * `.status` carrying a connection state ("connecting" / "updating"). They inherit
+ * the line's color (accent for typing, secondary for a plain status). */
+.tg-surface .MiddleHeader .tg-typing-dots {
+  display: inline-flex;
+  align-items: flex-end;
+  height: 1em;
+  margin-left: 0.1875rem;
+}
+
+.tg-surface .MiddleHeader .tg-typing-dot {
+  width: 0.1875rem;
+  height: 0.1875rem;
+  margin-left: 0.09375rem;
+  border-radius: 50%;
+
+  background: currentColor;
+  opacity: 0.3;
+
+  animation: tg-typing-blink 1.2s infinite both;
+}
+
+.tg-surface .MiddleHeader .tg-typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.tg-surface .MiddleHeader .tg-typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes tg-typing-blink {
+  0%,
+  70%,
+  100% {
+    opacity: 0.3;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tg-surface .MiddleHeader .tg-typing-dot {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* The accented ", N online" segment appended after a group's member count. */
+.tg-surface .MiddleHeader .status-online {
+  color: var(--color-primary);
+}
+
+/* ── MiddleHeaderPanes: the pinned-message bar (floating island below the header)
+ * Ported from panes/HeaderPinnedMessage.module.scss, wrapped in the same floating
+ * rounded island as the header so the two read as a stacked pair. It floats over
+ * the message list (like the reference panes); with no pins the component renders
+ * nothing, so it has zero layout impact until the backend supplies them. */
+.tg-surface .MiddleHeaderPanes {
+  position: absolute;
+  z-index: var(--z-middle-header, 20);
+  top: calc(0.75rem + var(--middle-header-height) + 0.5rem);
+  right: 0;
+  left: 0;
+
+  display: flex;
+
+  width: calc(100% - var(--middle-panel-inline-padding) * 2);
+  max-width: calc(var(--messages-container-width) - var(--middle-panel-inline-padding) * 2);
+  margin: 0 auto;
+}
+
+.tg-surface .HeaderPinnedMessageWrapper {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+
+  width: 100%;
+  height: 3rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+  border-radius: 1.25rem;
+
+  background: var(--color-background);
+  box-shadow: var(--shadow-pane);
+}
+
+.tg-surface .HeaderPinnedMessageWrapper .pinnedMessage {
+  cursor: pointer;
+
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: 0.875rem;
+
+  text-align: left;
+  background: transparent;
+
+  transition: background-color 0.15s ease;
+}
+
+.tg-surface .HeaderPinnedMessageWrapper .pinnedMessage:hover {
+  background-color: var(--color-chat-hover);
+}
+
+/* The vertical navigation strip: one accent segment per pin (capped), the active
+ * one at full opacity — a compact stand-in for PinnedMessageNavigation. */
+.tg-surface .HeaderPinnedMessageWrapper .pinned-nav {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 0.125rem;
+  justify-content: center;
+
+  width: 0.1875rem;
+  height: 1.875rem;
+  margin-right: 0.5rem;
+}
+
+.tg-surface .HeaderPinnedMessageWrapper .pinned-nav-bar {
+  flex: 1;
+  border-radius: 0.125rem;
+  background: var(--color-primary);
+  opacity: 0.3;
+}
+
+.tg-surface .HeaderPinnedMessageWrapper .pinned-nav-bar.active {
+  opacity: 1;
+}
+
+.tg-surface .HeaderPinnedMessageWrapper .messageText {
+  overflow: hidden;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.tg-surface .HeaderPinnedMessageWrapper .title {
+  overflow: hidden;
+  display: block;
+
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-medium);
+  line-height: 1rem;
+  color: var(--color-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tg-surface .HeaderPinnedMessageWrapper .summary {
+  overflow: hidden;
+  display: block;
+  margin: 0;
+
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Toast — a transient dark pill for the not-yet-wired header actions ──────── */
+.tg-surface .tg-toast {
+  pointer-events: none;
+
+  position: fixed;
+  z-index: 80;
+  bottom: 5.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+
+  max-width: min(80vw, 22rem);
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.5rem;
+
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #fff;
+  text-align: center;
+
+  background: var(--color-toast-background, rgba(32, 32, 32, 0.8));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+
+  animation: tg-toast-in 0.15s ease-out;
+}
+
+@keyframes tg-toast-in {
+  from {
+    transform: translate(-50%, 0.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}

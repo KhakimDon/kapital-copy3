@@ -1,0 +1,13 @@
+{
+  "name": "AIBA Cloud",
+  "short_name": "AIBA",
+  "description": "Biznesingizning barcha ishlari — bitta platformada",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    { "src": "/pwa-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/pwa-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

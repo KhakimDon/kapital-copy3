@@ -1,0 +1,757 @@
+/*
+ * Telegram Web A — SETTINGS screen, ported 1:1 from the original client.
+ *
+ * Sources ported (see /tg-a/telegram-web-client-master/src):
+ *   • components/left/settings/SettingsMain.module.scss   → .settings-main-scroll, .selfProfile, .menuSection
+ *   • components/gili/layout/Island.module.scss           → .Island, .IslandTitle, .IslandDescription
+ *   • components/ui/ListItem.scss                         → .ListItem, .ListItem-button, .ListItem-main-icon
+ *   • components/ui/Radio.scss                            → .radio-group, .Radio, .Radio-main
+ *   • components/ui/Checkbox.scss                         → .Checkbox, .Checkbox-main
+ *   • components/ui/RangeSlider.scss                      → .RangeSlider, .slider-main, .slider-fill-track
+ *   • components/ui/InputText.scss / TextArea.scss        → .input-group, .form-control (read-only)
+ *   • components/left/settings/SettingsGeneralBackgroundColor.scss → .settings-color-swatch
+ *   • components/left/LeftColumn.scss (.left-header)      → .left-header (SettingsHeader chrome)
+ *   • components/left/settings/Settings.scss             → .settings-item__current-value
+ *
+ * Plus a tail block of appearance knobs that reach the LIVE chat `.tg-surface`
+ * roots (numeric text size, custom solid colour, wallpaper blur) — driven by the
+ * data-attributes the workspace stamps and the CSS var / `data-tg-blur` flag that
+ * settings-store.ts pushes onto <html>.
+ *
+ * Rules: every top-level selector is prefixed with `.tg-surface` so the port
+ * stays scoped and can't leak into the rest of the app. Original class names are
+ * kept so this file reads 1:1 against the source. Colors use the real theme
+ * tokens already present on `.tg-surface` (tg-vars.css / theme.css); only sizing
+ * vars missing from that set are lifted here from src/styles/_variables.scss.
+ */
+
+/* ── sizing vars lifted from _variables.scss (not in tg-vars.css) ───────────── */
+.tg-surface {
+  --border-radius-island: 1.5rem;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+}
+
+/* ── Settings container (Settings.tsx layout: header + screen) ──────────────── */
+.tg-surface .Settings {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--color-background-secondary);
+}
+
+/* ── Header (left-header, secondary variant used by the settings column) ─────── */
+.tg-surface .left-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+
+  height: var(--column-header-height);
+  padding: 0.5rem 0.8125rem;
+
+  background-color: var(--color-background-secondary);
+}
+
+.tg-surface .left-header h3 {
+  overflow: hidden;
+
+  margin: 0 auto 0 1.375rem;
+
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  user-select: none;
+}
+
+/* translucent round header button (Button round color="translucent" size="smaller") */
+.tg-surface .left-header .header-button {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 50%;
+
+  color: var(--color-text-secondary);
+
+  background-color: transparent;
+  cursor: var(--custom-cursor, pointer);
+
+  transition: background-color 150ms;
+}
+
+@media (hover: hover) {
+  .tg-surface .left-header .header-button:hover {
+    background-color: var(--color-background-secondary-accent);
+  }
+}
+
+/* ── Scroll body (SettingsMain .root) ──────────────────────────────────────── */
+.tg-surface .settings-main-scroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  background-color: var(--color-background-secondary);
+}
+
+/* .selfProfile + .menuSection padding */
+.tg-surface .settings-selfProfile,
+.tg-surface .settings-menuSection {
+  padding: 1rem;
+}
+
+.tg-surface .settings-selfProfile {
+  padding-bottom: 0;
+}
+
+/* ── Self-profile block (ProfileInfo, centered avatar variant) ─────────────── */
+.tg-surface .SettingsProfileInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 0.5rem 1rem 1.25rem;
+}
+
+.tg-surface .SettingsProfileInfo .title {
+  overflow: hidden;
+  max-width: 100%;
+  margin-top: 0.75rem;
+
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.5rem;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tg-surface .SettingsProfileInfo .status {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.tg-surface .SettingsProfileInfo .status.online {
+  color: var(--color-primary);
+}
+
+/* ── Island (grouped card) ─────────────────────────────────────────────────── */
+.tg-surface .Island {
+  padding: 0.5rem;
+  border-radius: var(--border-radius-island);
+
+  background-color: var(--color-background);
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.05);
+}
+
+.tg-surface .Island + .Island {
+  margin-top: 1rem;
+}
+
+/* IslandTitle — muted section label above / between islands */
+.tg-surface .IslandTitle {
+  display: block;
+  padding: 0 1rem;
+
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25rem;
+  color: var(--color-text-secondary);
+
+  overflow-wrap: anywhere;
+}
+
+.tg-surface .IslandTitle + .Island {
+  margin-top: 0.5rem;
+}
+
+.tg-surface .Island + .IslandTitle {
+  margin-top: 1rem;
+}
+
+/* IslandDescription — muted note below an island */
+.tg-surface .IslandDescription {
+  display: block;
+  padding: 0.5rem 1rem;
+
+  font-size: 0.875rem;
+  line-height: 1rem;
+  color: var(--color-text-secondary);
+
+  overflow-wrap: anywhere;
+}
+
+/* ── ListItem (row) ────────────────────────────────────────────────────────── */
+.tg-surface .ListItem {
+  position: relative;
+}
+
+.tg-surface .ListItem-button {
+  --background-color: transparent;
+
+  position: relative;
+
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+  min-height: 3rem;
+  padding: 0 1rem;
+  border: none;
+  border-radius: var(--border-radius-default);
+
+  color: var(--color-text);
+  text-align: initial;
+  text-decoration: none;
+  white-space: nowrap;
+
+  background-color: var(--background-color);
+  outline: none;
+  cursor: var(--custom-cursor, pointer);
+
+  transition: background-color 150ms ease-in-out;
+}
+
+.tg-surface .ListItem.is-static .ListItem-button {
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .tg-surface .ListItem:not(.is-static) .ListItem-button:hover,
+  .tg-surface .ListItem:not(.is-static) .ListItem-button:focus-visible {
+    --background-color: var(--color-chat-hover);
+  }
+}
+
+/* leading icon */
+.tg-surface .ListItem-main-icon {
+  flex-shrink: 0;
+  margin-inline-end: 1.75rem;
+  font-size: 1.5rem;
+  color: var(--color-text-secondary);
+}
+
+/* narrow rows keep a slightly tighter icon gutter */
+.tg-surface .ListItem.narrow .ListItem-main-icon {
+  margin-inline-end: 1.5rem;
+}
+
+/* label text */
+.tg-surface .ListItem-label {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* trailing switch / value pushes to the far end */
+.tg-surface .ListItem-button > .settings-switch,
+.tg-surface .ListItem-button > .settings-item__current-value {
+  margin-inline-start: auto;
+}
+
+.tg-surface .settings-item__current-value {
+  flex-shrink: 0;
+  padding-inline-start: 0.5rem;
+
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+}
+
+/* destructive / primary tints (for honest-note rows if ever needed) */
+.tg-surface .ListItem.primary .ListItem-button,
+.tg-surface .ListItem.primary .ListItem-main-icon {
+  color: var(--color-primary);
+}
+
+/* trailing chevron on navigable rows (task: "proper icons + chevrons") */
+.tg-surface .ListItem-chevron {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-inline-start: 0.25rem;
+  color: var(--color-text-secondary);
+  opacity: 0.55;
+}
+.tg-surface .ListItem-button > .settings-item__current-value + .ListItem-chevron {
+  margin-inline-start: 0.25rem;
+}
+/* a row with only a chevron still pushes it to the far end */
+.tg-surface .ListItem-button > .ListItem-chevron:nth-child(3) {
+  margin-inline-start: auto;
+}
+
+/* disabled row (e.g. "Upload — coming soon") */
+.tg-surface .ListItem.disabled .ListItem-button {
+  opacity: 0.5;
+}
+
+/* ── Header right-side actions (edit-profile pencil + ⋮ menu) ───────────────── */
+.tg-surface .settings-header-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.25rem;
+}
+.tg-surface .left-header .header-button.active {
+  background-color: var(--color-background-secondary-accent);
+}
+
+/* ── Radio (ui/Radio.scss) ─────────────────────────────────────────────────── */
+.tg-surface .radio-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.tg-surface .Radio {
+  cursor: var(--custom-cursor, pointer);
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+  min-height: 3rem;
+  margin: 0;
+  padding-inline-start: 4.25rem;
+
+  border-radius: var(--border-radius-default);
+  text-align: initial;
+
+  transition: background-color 150ms ease-in-out;
+}
+
+@media (hover: hover) {
+  .tg-surface .Radio:hover {
+    background-color: var(--color-chat-hover);
+  }
+}
+
+.tg-surface .Radio.withSubLabel .Radio-main {
+  padding: 0.4375rem 0 0.5625rem;
+}
+
+.tg-surface .Radio > input {
+  position: absolute;
+  z-index: -1;
+  opacity: 0;
+}
+
+.tg-surface .Radio-main::before,
+.tg-surface .Radio-main::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: block;
+}
+
+.tg-surface .Radio-main::before {
+  inset-inline-start: 1.125rem;
+
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--color-borders-input, var(--color-borders));
+  border-radius: 50%;
+
+  background-color: var(--color-background);
+  transition: border-color 0.1s ease;
+}
+
+.tg-surface .Radio-main::after {
+  inset-inline-start: 1.4375rem;
+
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+
+  opacity: 0;
+  background: var(--color-primary);
+  transition: opacity 0.1s ease;
+}
+
+.tg-surface .Radio > input:checked ~ .Radio-main::before {
+  border-color: var(--color-primary);
+}
+.tg-surface .Radio > input:checked ~ .Radio-main::after {
+  opacity: 1;
+}
+
+.tg-surface .Radio-main .label {
+  display: block;
+  line-height: 1.5rem;
+  overflow-wrap: anywhere;
+}
+.tg-surface .Radio-main .subLabel {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1rem;
+  color: var(--color-text-secondary);
+}
+
+/* ── Checkbox (ui/Checkbox.scss) ───────────────────────────────────────────── */
+.tg-surface .Checkbox {
+  cursor: var(--custom-cursor, pointer);
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  min-height: 3rem;
+  margin: 0;
+  padding-inline-start: 4rem;
+
+  border-radius: var(--border-radius-default);
+  text-align: initial;
+
+  transition: background-color 150ms ease-in-out;
+}
+
+@media (hover: hover) {
+  .tg-surface .Checkbox:not(.disabled):hover {
+    background-color: var(--color-chat-hover);
+  }
+}
+
+.tg-surface .Checkbox.disabled {
+  cursor: var(--custom-cursor, default);
+  opacity: 0.5;
+}
+
+.tg-surface .Checkbox > input {
+  position: absolute;
+  z-index: -1;
+  opacity: 0;
+}
+
+.tg-surface .Checkbox-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.tg-surface .Checkbox-main::before,
+.tg-surface .Checkbox-main::after {
+  content: "";
+  pointer-events: none;
+
+  position: absolute;
+  top: 50%;
+  inset-inline-start: 1.125rem;
+  transform: translateY(-50%);
+
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.tg-surface .Checkbox-main::before {
+  border: 0.125rem solid var(--color-borders-input, var(--color-borders));
+  border-radius: 0.25rem;
+  background-color: var(--color-background);
+  transition: border-color 0.1s ease, background-color 0.1s ease;
+}
+
+.tg-surface .Checkbox-main::after {
+  border-radius: 0.25rem;
+  opacity: 0;
+
+  background-color: var(--color-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 0.8rem;
+
+  transition: opacity 0.1s ease;
+}
+
+.tg-surface .Checkbox > input:checked ~ .Checkbox-main::before {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+}
+.tg-surface .Checkbox > input:checked ~ .Checkbox-main::after {
+  opacity: 1;
+}
+
+.tg-surface .Checkbox-main .label {
+  line-height: 1.25rem;
+  overflow-wrap: anywhere;
+}
+.tg-surface .Checkbox-main .subLabel {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1rem;
+  color: var(--color-text-secondary);
+}
+
+/* ── RangeSlider (ui/RangeSlider.scss) ─────────────────────────────────────── */
+.tg-surface .RangeSlider {
+  --slider-color: var(--color-primary);
+
+  margin: 0.5rem 1rem 0.25rem;
+}
+
+.tg-surface .RangeSlider .slider-top-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.625rem;
+}
+.tg-surface .RangeSlider .slider-top-row .value {
+  flex-shrink: 0;
+  margin-inline-start: 1rem;
+  color: var(--color-text-secondary);
+}
+
+.tg-surface .RangeSlider .slider-main {
+  position: relative;
+  z-index: 1;
+}
+.tg-surface .RangeSlider .slider-main::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0.3125rem;
+  left: 0;
+  width: 100%;
+  height: 0.125rem;
+  border-radius: 0.125rem;
+  opacity: 0.5;
+  background-color: var(--color-borders);
+}
+.tg-surface .RangeSlider .slider-fill-track {
+  pointer-events: none;
+  position: absolute;
+  top: 0.3125rem;
+  left: 0;
+  height: 0.125rem;
+  border-radius: 0.125rem;
+  background-color: var(--slider-color);
+}
+
+/* native range reset (styles/mixins reset-range) */
+.tg-surface .RangeSlider__input {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 0.75rem;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: var(--custom-cursor, pointer);
+}
+.tg-surface .RangeSlider__input:focus {
+  outline: none;
+}
+.tg-surface .RangeSlider__input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--slider-color);
+  transition: transform 0.25s ease-in-out;
+}
+.tg-surface .RangeSlider__input::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+.tg-surface .RangeSlider__input::-moz-range-thumb {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--slider-color);
+  transition: transform 0.25s ease-in-out;
+}
+.tg-surface .RangeSlider__input::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}
+
+.tg-surface .RangeSlider .slider-options {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  margin-top: 0.25rem;
+}
+.tg-surface .RangeSlider .slider-option {
+  cursor: var(--custom-cursor, pointer);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  transition: color 0.2s ease;
+}
+.tg-surface .RangeSlider .slider-option:hover,
+.tg-surface .RangeSlider .slider-option.active {
+  color: var(--color-text);
+}
+.tg-surface .RangeSlider .slider-option.active {
+  font-weight: var(--font-weight-medium);
+}
+.tg-surface .RangeSlider .slider-option:first-child {
+  text-align: left;
+}
+.tg-surface .RangeSlider .slider-option:last-child {
+  text-align: right;
+}
+
+/* ── Solid-colour picker (SettingsGeneralBackgroundColor predefined-colors) ─── */
+.tg-surface .settings-color-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+}
+.tg-surface .settings-color-swatch {
+  position: relative;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 50%;
+  cursor: var(--custom-cursor, pointer);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  transition: transform 0.15s ease;
+}
+.tg-surface .settings-color-swatch:hover {
+  transform: scale(1.08);
+}
+.tg-surface .settings-color-swatch.active::after {
+  content: "";
+  position: absolute;
+  inset: -0.25rem;
+  border: 2px solid var(--color-primary);
+  border-radius: 50%;
+}
+/* the native colour input, masked to a round swatch showing its own value */
+.tg-surface .settings-color-input {
+  overflow: hidden;
+  background:
+    conic-gradient(from 90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+}
+.tg-surface .settings-color-input input[type="color"] {
+  position: absolute;
+  inset: -25%;
+  width: 150%;
+  height: 150%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: var(--custom-cursor, pointer);
+  opacity: 0;
+}
+
+/* ── Edit-profile input fields (ui/InputText + ui/TextArea, read-only) ──────── */
+.tg-surface .settings-content-header {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 0.75rem;
+}
+.tg-surface .settings-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+.tg-surface .input-group {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+.tg-surface .input-group .form-control {
+  display: block;
+  width: 100%;
+  padding: 1.25rem 0.75rem 0.375rem;
+  border: 1px solid var(--color-borders-input, var(--color-borders));
+  border-radius: var(--border-radius-default);
+
+  font-size: 1rem;
+  color: var(--color-text);
+  background-color: transparent;
+  outline: none;
+  resize: none;
+}
+.tg-surface .input-group .form-control:read-only {
+  cursor: default;
+}
+.tg-surface .input-group > label {
+  position: absolute;
+  top: 0.9375rem;
+  inset-inline-start: 0.8125rem;
+
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+
+  transform-origin: left center;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.tg-surface .input-group.touched:not(.empty) > label,
+.tg-surface .input-group .form-control:focus ~ label {
+  transform: translateY(-0.6875rem) scale(0.75);
+  color: var(--color-primary);
+}
+.tg-surface .input-group .input-max-length {
+  position: absolute;
+  top: 0.5rem;
+  inset-inline-end: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+/* ══ Appearance knobs applied to the LIVE chat surfaces (not just this panel) ══
+ * These rules must beat settings.css's generic `--tg-msg-size` fallback and add
+ * the numeric text-size scale + the custom solid colour + the wallpaper blur —
+ * all driven by data-attributes the workspace stamps on its `.tg-surface` roots
+ * (and by CSS vars / a `data-tg-blur` flag settings-store.ts pushes onto <html>).
+ * They're qualified with `[data-tg-wallpaper]` so they outrank settings.css's
+ * `.tg-surface[data-tg-textsize]` regardless of stylesheet order. */
+
+/* numeric message text size (12–20px) → --tg-msg-size (reference RangeSlider) */
+.tg-surface[data-tg-wallpaper][data-tg-textsize="12"] { --tg-msg-size: 12px; }
+.tg-surface[data-tg-wallpaper][data-tg-textsize="13"] { --tg-msg-size: 13px; }
+.tg-surface[data-tg-wallpaper][data-tg-textsize="14"] { --tg-msg-size: 14px; }
+.tg-surface[data-tg-wallpaper][data-tg-textsize="15"] { --tg-msg-size: 15px; }
+.tg-surface[data-tg-wallpaper][data-tg-textsize="16"] { --tg-msg-size: 16px; }
+.tg-surface[data-tg-wallpaper][data-tg-textsize="17"] { --tg-msg-size: 17px; }
+.tg-surface[data-tg-wallpaper][data-tg-textsize="18"] { --tg-msg-size: 18px; }
+.tg-surface[data-tg-wallpaper][data-tg-textsize="19"] { --tg-msg-size: 19px; }
+.tg-surface[data-tg-wallpaper][data-tg-textsize="20"] { --tg-msg-size: 20px; }
+
+/* custom solid colour — reads --tg-wp-color set on <html> by settings-store.ts.
+ * Only defined here (settings.css has no "custom"), so no specificity conflict. */
+.tg-surface[data-tg-wallpaper="custom"] .tg-wallpaper,
+.tg-surface.tg-wallpaper[data-tg-wallpaper="custom"] {
+  background-color: var(--tg-wp-color, #d5dbe3);
+  background-image: none;
+}
+.tg-surface[data-tg-wallpaper="custom"] .tg-wallpaper::before,
+.tg-surface[data-tg-wallpaper="custom"] .tg-wallpaper::after,
+.tg-surface.tg-wallpaper[data-tg-wallpaper="custom"]::before,
+.tg-surface.tg-wallpaper[data-tg-wallpaper="custom"]::after {
+  display: none;
+}
+
+/* wallpaper-image blur (reference isBlurred) — blurs the photo/doodle layers,
+ * matching Telegram (blur affects image wallpapers, not flat colours). */
+:root[data-tg-blur="true"] .tg-surface .tg-wallpaper::before,
+:root[data-tg-blur="true"] .tg-surface .tg-wallpaper::after,
+:root[data-tg-blur="true"] .tg-surface.tg-wallpaper::before,
+:root[data-tg-blur="true"] .tg-surface.tg-wallpaper::after {
+  filter: blur(12px);
+  transform: scale(1.1);
+}

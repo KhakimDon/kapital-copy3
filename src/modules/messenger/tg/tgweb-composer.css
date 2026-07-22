@@ -1,0 +1,1233 @@
+/*
+ * Composer — ported 1:1 from Telegram Web A ("A" client):
+ *   • components/common/Composer.scss        (.Composer, .composer-wrapper,
+ *     .svg-appendix, .message-input-wrapper, .composer-action-button,
+ *     the outside round > .Button, .recording-state)
+ *   • components/middle/MiddleColumn.scss     (.middle-column-footer wrapper —
+ *     max-width var(--messages-container-width); padding 0 1rem; centered)
+ *   • components/middle/composer/ComposerEmbeddedMessage.scss + EmbeddedMessage.scss
+ *     (the reply / edit / attachment strip above the input)
+ *
+ * Every top-level selector is prefixed with `.tg-surface ` so the port stays
+ * scoped and can't leak into the rest of the app. Real `--color-*` tokens come
+ * from tg/_foundation/tg-vars.css (already on `.tg-surface`); the few sizing
+ * tokens the reference relies on but that aren't in the foundation are lifted
+ * from src/styles/_variables.scss into the scope block below.
+ */
+
+/* sizing/shadow tokens lifted from styles/_variables.scss (same value light+dark) */
+.tg-surface {
+  --base-height: 3rem;
+  --shadow-footer: 0 1px 8px 1px rgba(0, 0, 0, 0.12);
+  --messages-container-width: 47.5rem;
+  --border-radius-messages: 0.9375rem;
+  --border-radius-messages-small: 0.375rem;
+  --composer-text-size: 0.9375rem; /* 15px — matches the ported bubble text */
+  --color-placeholders: var(--tg-placeholder);
+  --color-error: #e53935;
+}
+.dark .tg-surface {
+  --shadow-footer: 0 1px 8px 1px rgba(0, 0, 0, 0.35);
+}
+
+/* ── .middle-column-footer — the centered, width-capped footer row ───────────
+ * (we render it as `.Composer` itself: the flex row that holds the wrapper card
+ * + the outside round button, `align-items: flex-end`, capped + centered). */
+.tg-surface .Composer {
+  --base-height: 3rem;
+
+  display: flex;
+  align-items: flex-end;
+
+  width: 100%;
+  max-width: var(--messages-container-width);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+@media (max-width: 600px) {
+  .tg-surface .Composer {
+    padding: 0 0.5rem;
+  }
+}
+
+/* ── .composer-wrapper — the rounded input card with the appendix tail ──────── */
+.tg-surface .composer-wrapper {
+  position: relative;
+  z-index: 1;
+
+  flex-grow: 1;
+  min-width: 0;
+  max-width: calc(100% - 3.5rem);
+
+  border-radius: var(--border-radius-messages);
+  border-bottom-right-radius: 0;
+
+  background: var(--color-background);
+  box-shadow: var(--shadow-footer);
+}
+@media (max-width: 600px) {
+  .tg-surface .composer-wrapper {
+    max-width: calc(100% - 3.375rem);
+  }
+}
+
+.tg-surface .composer-wrapper .svg-appendix {
+  position: absolute;
+  right: -0.5rem;
+  bottom: -0.1875rem;
+
+  width: 0.5625rem;
+  height: 1.25rem;
+
+  transition: opacity 200ms;
+}
+.tg-surface .composer-wrapper .svg-appendix .corner {
+  fill: var(--color-background);
+}
+
+/* ── .message-input-wrapper — the flex row inside the card ──────────────────── */
+.tg-surface .message-input-wrapper {
+  --action-button-size: var(--base-height, 3rem);
+
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* the emoji (symbol) button on the left + the attach button(s) on the right */
+.tg-surface .composer-action-button {
+  flex-shrink: 0;
+  align-self: flex-end;
+
+  display: grid;
+  place-items: center;
+
+  width: var(--action-button-size);
+  height: var(--action-button-size);
+  margin: 0;
+  padding: 0;
+  border: none;
+
+  color: var(--color-composer-button);
+
+  background: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.tg-surface .composer-action-button:hover {
+  color: var(--color-text-secondary);
+}
+.tg-surface .composer-action-button.activated {
+  color: var(--color-primary);
+}
+
+.tg-surface .composer-action-buttons-container {
+  position: relative;
+  align-self: flex-end;
+  width: auto;
+}
+
+/* ── #message-input-text — the (auto-growing) contentEditable text field ──────
+ * Ported from Telegram Web A's `.input-scroller` + `#editable-message-text`
+ * (common/Composer.scss). The rich input is a `contentEditable` div that renders
+ * formatting LIVE; it auto-grows from one line (--base-height) up to ~50vh, then
+ * scrolls internally. Formatting inside the field (bold/italic/link/spoiler/…)
+ * is real styled DOM, so the entity styles below mirror the bubble renderer. */
+.tg-surface #message-input-text {
+  position: relative;
+  flex-grow: 1;
+  min-width: 0;
+}
+.tg-surface #message-input-text .input-scroller {
+  overflow: hidden;
+  overflow-y: auto;
+
+  min-height: var(--base-height, 3rem);
+  max-height: 50vh;
+
+  transition: height 100ms ease;
+}
+.tg-surface #message-input-text .input-scroller-content {
+  position: relative;
+}
+.tg-surface #message-input-text .form-control {
+  display: block;
+
+  width: 100%;
+  margin: 0;
+  /* one line sits at exactly --base-height (3rem); grows from there */
+  padding: calc((var(--base-height, 3rem) - var(--composer-text-size, 1rem) * 1.3125) / 2) 0;
+  padding-left: 0.5rem; /* input is never the only child (emoji button precedes it) */
+  border: none;
+
+  font-family: inherit;
+  font-size: var(--composer-text-size, 1rem);
+  line-height: 1.3125;
+
+  color: var(--color-text);
+  caret-color: var(--color-text);
+
+  background: transparent;
+  outline: none;
+
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  unicode-bidi: plaintext;
+}
+/* the placeholder — a sibling shown only while the field is empty */
+.tg-surface #message-input-text .placeholder-text {
+  pointer-events: none;
+
+  position: absolute;
+  top: calc((var(--base-height, 3rem) - var(--composer-text-size, 1rem) * 1.3125) / 2);
+  left: 0.5rem;
+
+  overflow: hidden;
+
+  max-width: 100%;
+
+  font-size: var(--composer-text-size, 1rem);
+  line-height: 1.3125;
+  color: var(--color-placeholders);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  unicode-bidi: plaintext;
+}
+
+/* ── live inline formatting inside the input (matches the bubble renderer) ───── */
+.tg-surface #message-input-text .form-control b,
+.tg-surface #message-input-text .form-control strong {
+  font-weight: var(--font-weight-semibold, 600);
+}
+.tg-surface #message-input-text .form-control i,
+.tg-surface #message-input-text .form-control em {
+  font-style: italic;
+}
+.tg-surface #message-input-text .text-entity-link {
+  color: var(--color-links);
+  text-decoration: none;
+  word-break: break-all;
+  cursor: pointer;
+}
+.tg-surface #message-input-text .text-entity-link:hover {
+  text-decoration: underline;
+}
+.tg-surface #message-input-text .form-control code,
+.tg-surface #message-input-text .text-entity-code {
+  padding: 0 0.1875rem;
+  border-radius: 0.25rem;
+
+  font-family: var(--font-monospace, ui-monospace, monospace);
+  font-size: 0.9em;
+
+  background: rgba(0, 0, 0, 0.08);
+}
+.dark .tg-surface #message-input-text .form-control code,
+.dark .tg-surface #message-input-text .text-entity-code {
+  background: rgba(255, 255, 255, 0.12);
+}
+.tg-surface #message-input-text .form-control pre {
+  margin: 0.25rem 0;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+
+  font-family: var(--font-monospace, ui-monospace, monospace);
+  font-size: 0.9em;
+  white-space: pre-wrap;
+
+  background: rgba(0, 0, 0, 0.08);
+}
+.dark .tg-surface #message-input-text .form-control pre {
+  background: rgba(255, 255, 255, 0.12);
+}
+.tg-surface #message-input-text .form-control blockquote {
+  margin: 0.125rem 0;
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--color-primary);
+  opacity: 0.9;
+}
+/* spoiler — the real tiled-dot texture (same asset as the bubble spoiler) */
+.tg-surface #message-input-text .spoiler {
+  padding: 0 0.3125rem 0.125rem;
+  border-radius: 0.5rem;
+
+  text-shadow:
+    -2px -2px 0 var(--color-background),
+    2px -2px 0 var(--color-background),
+    -2px 2px 0 var(--color-background),
+    2px 2px 0 var(--color-background);
+
+  background-image: url("./assets/spoiler-dots-black.png");
+  background-size: auto min(100%, 1.125rem);
+}
+.dark .tg-surface #message-input-text .spoiler {
+  background-image: url("./assets/spoiler-dots-white.png");
+}
+/* inline custom-emoji sticker — an atomic (contenteditable=false) host span sized
+ * to the composer text (~1.25em), centered on the baseline, with the React-rendered
+ * media (img / video / TGS lottie) or fallback glyph filling it. Matches the bubble
+ * renderer's custom-emoji box (entities.tsx EMOJI_BOX). */
+.tg-surface #message-input-text .custom-emoji {
+  display: inline-block;
+  width: 1.25em;
+  height: 1.25em;
+  vertical-align: middle;
+  line-height: 1;
+  overflow: hidden;
+}
+.tg-surface #message-input-text .custom-emoji > * {
+  max-width: 100%;
+  max-height: 100%;
+}
+.tg-surface #message-input-text .custom-emoji .tg-input-emoji-media,
+.tg-surface #message-input-text .custom-emoji img,
+.tg-surface #message-input-text .custom-emoji video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.tg-surface #message-input-text .custom-emoji .tg-input-emoji-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+
+  font-size: 1em;
+  line-height: 1;
+}
+
+/* ── the outside circular send / mic / stop button ─────────────────────────── */
+.tg-surface .Composer .Button {
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  width: var(--base-height);
+  height: var(--base-height);
+  margin-left: 0.5rem;
+  border: none;
+  border-radius: 50%;
+
+  color: var(--color-composer-button); /* mic / record idle icon */
+
+  background: var(--color-background);
+  box-shadow: var(--shadow-footer);
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.15s;
+}
+/* send / edit-check icons flip to the primary accent (reference: hover:hover) */
+.tg-surface .Composer .Button.send,
+.tg-surface .Composer .Button.edit,
+.tg-surface .Composer .Button.recording {
+  color: var(--color-primary);
+}
+.tg-surface .Composer .Button:hover {
+  filter: brightness(0.97);
+}
+.dark .tg-surface .Composer .Button:hover {
+  filter: brightness(1.12);
+}
+.tg-surface .Composer .Button:active {
+  transform: scale(0.92);
+}
+.tg-surface .Composer .Button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* the record-cancel (trash) button that appears while recording */
+.tg-surface .Composer .Button.cancel {
+  position: relative;
+  z-index: 1;
+  color: var(--color-composer-button);
+  box-shadow: none;
+  background: none;
+}
+.tg-surface .Composer .Button.cancel:hover {
+  background: var(--color-chat-hover);
+  filter: none;
+}
+
+/* ── .recording-state — timer + the blinking red macOS-style dot ────────────── */
+.tg-surface .recording-state {
+  position: relative;
+
+  display: inline-flex;
+  align-items: center;
+  flex-grow: 1;
+
+  height: var(--base-height);
+  padding: 0 3.125rem 0 1rem;
+
+  font-family: inherit;
+  font-size: var(--composer-text-size, 1rem);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--base-height);
+  color: var(--color-text);
+}
+.tg-surface .recording-state::after {
+  content: "";
+
+  position: absolute;
+  top: 50%;
+  right: 1.3125rem;
+
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-top: -0.375rem;
+  border-radius: 0.375rem;
+
+  background: var(--color-error);
+
+  animation: tgComposerRecBlink 1.5s infinite;
+}
+@keyframes tgComposerRecBlink {
+  from { opacity: 1; }
+  to { opacity: 0.3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tg-surface .recording-state::after { animation: none; }
+}
+
+/* ── ComposerEmbeddedMessage — the reply / edit / attachment strip ──────────── */
+.tg-surface .ComposerEmbeddedMessage {
+  --accent-color: var(--color-primary);
+  overflow: hidden;
+}
+.tg-surface .ComposerEmbeddedMessage_inner {
+  display: flex;
+  align-items: center;
+  padding-top: 0.5rem;
+}
+.tg-surface .ComposerEmbeddedMessage .embedded-left-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-content: center;
+
+  height: 2.625rem;
+  padding: 0.5625rem 0.75rem 0.5625rem 1rem;
+
+  color: var(--accent-color);
+  background: none;
+}
+.tg-surface .ComposerEmbeddedMessage .embedded-thumb {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-right: 0.5rem;
+  border-radius: 0.25rem;
+  object-fit: cover;
+}
+.tg-surface .ComposerEmbeddedMessage .EmbeddedMessage {
+  position: relative;
+  overflow: hidden;
+  flex-grow: 1;
+  min-width: 0;
+
+  padding: 0.1875rem 0 0.1875rem 0.625rem;
+  border-radius: 0.25rem;
+
+  font-size: calc(var(--composer-text-size, 1rem) - 0.0625rem);
+  line-height: 1.125rem;
+  color: var(--color-text);
+}
+/* the peer-coloured bar on the leading edge of the quote */
+.tg-surface .ComposerEmbeddedMessage .EmbeddedMessage::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0.1875rem;
+  border-radius: 0.1875rem;
+  background: var(--accent-color);
+}
+.tg-surface .ComposerEmbeddedMessage .message-title {
+  overflow: hidden;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--accent-color);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tg-surface .ComposerEmbeddedMessage .message-text {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tg-surface .ComposerEmbeddedMessage .embedded-cancel {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  align-self: center;
+
+  width: 2rem;
+  height: 2rem;
+  margin: 0 0.6875rem 0 0.75rem;
+  border: none;
+  border-radius: 50%;
+
+  color: var(--accent-color);
+
+  background: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.tg-surface .ComposerEmbeddedMessage .embedded-cancel:hover {
+  background: var(--color-chat-hover);
+}
+
+/* ── AttachMenu — the paperclip popup (middle/composer/AttachMenu.scss) ──────── */
+/* The bubble itself (.Menu.compact .bubble + .MenuItem rows) is styled by the
+   shared tgweb-menu.css; here we only pin the grow/fade open transition. The
+   menu opens UPWARD from a right-anchored button, so it pivots from bottom-right
+   (reuses the tgMenuIn keyframes defined in tgweb-menu.css). */
+.tg-surface .AttachMenu--menu {
+  transform-origin: bottom right;
+  animation: tgMenuIn 0.15s cubic-bezier(0.2, 0, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tg-surface .AttachMenu--menu {
+    animation: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * SymbolMenu — the tabbed Emoji / Stickers / GIFs popover (middle/composer/
+ * SymbolMenu.scss + SymbolMenuFooter). Rendered above the left symbol button.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.tg-surface .tg-symbol-menu {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  width: 22rem;
+  max-width: 92vw;
+  height: 26rem;
+  max-height: 70vh;
+  border: 1px solid var(--tg-border);
+  border-radius: var(--tg-radius);
+
+  color: var(--color-text);
+
+  background: var(--tg-panel);
+  box-shadow: var(--tg-bubble-shadow);
+  animation: tgMenuIn 0.15s cubic-bezier(0.2, 0, 0.2, 1) both;
+  transform-origin: bottom left;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tg-surface .tg-symbol-menu {
+    animation: none;
+  }
+}
+
+.tg-surface .SymbolMenu-main {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.tg-surface .SymbolMenu-footer {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  height: 3rem;
+  box-shadow: inset 0 0.0625rem 0 0 var(--tg-border);
+}
+.tg-surface .SymbolMenu-footer .symbol-tabs {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.tg-surface .symbol-tab-button,
+.tg-surface .symbol-delete-button {
+  display: grid;
+  place-items: center;
+
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 0.5rem;
+
+  color: var(--tg-text-secondary);
+
+  background: none;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.tg-surface .symbol-tab-button:hover,
+.tg-surface .symbol-delete-button:hover {
+  background: var(--tg-hover);
+}
+.tg-surface .symbol-tab-button.activated {
+  color: var(--tg-primary);
+}
+.tg-surface .symbol-delete-button {
+  position: absolute;
+  right: 0.5rem;
+}
+
+/* per-tab shell (sticker / gif pickers): search box + scroll area + empty state */
+.tg-surface .tg-symbol-tab {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+.tg-surface .tg-symbol-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--tg-border);
+}
+.tg-surface .tg-symbol-search-input {
+  min-width: 0;
+  flex: 1;
+
+  font-size: 0.875rem;
+  color: var(--color-text);
+
+  background: transparent;
+  border: none;
+  outline: none;
+}
+.tg-surface .tg-symbol-search-input::placeholder {
+  color: var(--tg-placeholder);
+}
+.tg-surface .tg-symbol-search-clear {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+
+  width: 1.25rem;
+  height: 1.25rem;
+  border: none;
+  border-radius: 50%;
+
+  color: var(--tg-text-secondary);
+
+  background: none;
+  cursor: pointer;
+}
+.tg-surface .tg-symbol-search-clear:hover {
+  background: var(--tg-hover);
+}
+.tg-surface .tg-symbol-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  padding: 0.5rem;
+}
+.tg-surface .tg-symbol-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+
+  height: 100%;
+  padding: 2rem;
+
+  font-size: 0.875rem;
+  color: var(--tg-text-secondary);
+  text-align: center;
+}
+
+.tg-surface .symbol-set {
+  margin-bottom: 0.75rem;
+}
+.tg-surface .symbol-set:last-child {
+  margin-bottom: 0;
+}
+.tg-surface .symbol-set-header {
+  padding: 0.25rem 0.25rem 0.125rem;
+}
+.tg-surface .symbol-set-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--tg-text-secondary);
+}
+
+.tg-surface .tg-sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+.tg-surface .tg-symbol-cell {
+  display: grid;
+  place-items: center;
+
+  aspect-ratio: 1;
+  padding: 0.25rem;
+  border: none;
+  border-radius: 0.5rem;
+
+  background: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.tg-surface .tg-symbol-cell:hover {
+  background: var(--tg-hover);
+}
+.tg-surface .tg-sticker-media {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.tg-surface .tg-sticker-fallback {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.tg-surface .tg-gif-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+.tg-surface .tg-gif-cell {
+  position: relative;
+  overflow: hidden;
+
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 0.5rem;
+
+  background: var(--tg-hover);
+  cursor: pointer;
+}
+.tg-surface .tg-gif-media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tg-surface .tg-gif-skeleton {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--tg-hover);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * TextFormatter — the selection toolbar (middle/composer/TextFormatter.scss),
+ * adapted to anchor above the input (we don't compute caret pixel coords on a
+ * textarea, so `.tg-formatter-pop` centers it over the field).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.tg-surface .tg-formatter-pop {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  z-index: 30;
+  margin-bottom: 0.5rem;
+  transform: translateX(-50%);
+}
+.tg-surface .TextFormatter {
+  position: relative;
+
+  display: inline-flex;
+  align-items: center;
+
+  padding: 0.375rem 0.4375rem;
+  border-radius: var(--border-radius-messages);
+
+  background: var(--color-background);
+  box-shadow: var(--shadow-footer);
+  animation: tgMenuIn 0.12s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tg-surface .TextFormatter {
+    animation: none;
+  }
+}
+.tg-surface .TextFormatter-buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.tg-surface .TextFormatter-button {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+
+  width: 2rem;
+  height: 2rem;
+  margin: 0 0.0625rem;
+  border: none;
+  border-radius: var(--border-radius-messages-small);
+
+  color: var(--color-text);
+
+  background: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.tg-surface .TextFormatter-button:hover {
+  background: var(--color-chat-hover);
+}
+.tg-surface .TextFormatter-button.color-primary {
+  color: var(--color-primary);
+}
+.tg-surface .TextFormatter-divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 1.5rem;
+  margin: 0 0.25rem;
+  background: var(--color-borders);
+}
+.tg-surface .TextFormatter-link-control {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0.375rem 0.4375rem;
+  border-radius: var(--border-radius-messages);
+
+  opacity: 0;
+  pointer-events: none;
+  background: var(--color-background);
+  transition: opacity 0.2s ease;
+}
+.tg-surface .TextFormatter.link-control-shown .TextFormatter-link-control {
+  opacity: 1;
+  pointer-events: auto;
+}
+.tg-surface .TextFormatter-link-url-input {
+  min-width: 11rem;
+  flex: 1;
+
+  font-size: 0.875rem;
+  color: var(--color-text);
+
+  background: transparent;
+  border: none;
+  outline: none;
+}
+.tg-surface .TextFormatter-link-url-input::placeholder {
+  color: var(--color-placeholders);
+}
+.tg-surface .TextFormatter-link-url-confirm {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.tg-surface .TextFormatter-link-url-confirm.shown {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * MentionTooltip — @-autocomplete (middle/composer/MentionTooltip.scss).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.tg-surface .tg-mention-pop {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  z-index: 30;
+  margin-bottom: 0.5rem;
+}
+.tg-surface .MentionTooltip.composer-tooltip {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+
+  width: 20rem;
+  max-width: calc(100vw - 4rem);
+  max-height: 16rem;
+  padding: 0.25rem;
+  border: 1px solid var(--color-borders);
+  border-radius: var(--border-radius-messages);
+
+  background: var(--color-background);
+  box-shadow: var(--shadow-footer);
+}
+.tg-surface .mention-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+
+  color: var(--color-text);
+  text-align: start;
+
+  background: none;
+  cursor: pointer;
+}
+.tg-surface .mention-item:hover,
+.tg-surface .mention-item.active {
+  background: var(--color-chat-hover);
+}
+.tg-surface .mention-info {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
+}
+.tg-surface .mention-name {
+  overflow: hidden;
+  font-weight: var(--font-weight-medium, 500);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.tg-surface .mention-handle {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Send-options menu — right-click / long-press the send button (CustomSendMenu).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.tg-surface .tg-send-wrap {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+}
+.tg-surface .tg-send-menu {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  z-index: 40;
+  margin-bottom: 0.5rem;
+
+  transform-origin: bottom right;
+  animation: tgMenuIn 0.15s cubic-bezier(0.2, 0, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tg-surface .tg-send-menu {
+    animation: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Embedded strip extras — reply avatar + multi-file attachment chips.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.tg-surface .ComposerEmbeddedMessage .embedded-avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-right: 0.5rem;
+}
+.tg-surface .ComposerEmbeddedMessage .embedded-attachments {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+
+  padding: 0.125rem 0;
+}
+.tg-surface .ComposerEmbeddedMessage .embedded-attach-item {
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.375rem;
+}
+.tg-surface .ComposerEmbeddedMessage .embedded-attach-thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tg-surface .ComposerEmbeddedMessage .embedded-attach-file {
+  display: grid;
+  place-items: center;
+
+  width: 100%;
+  height: 100%;
+
+  color: var(--color-text-secondary);
+  background: var(--color-chat-hover);
+}
+.tg-surface .ComposerEmbeddedMessage .embedded-attach-remove {
+  position: absolute;
+  top: 0.0625rem;
+  right: 0.0625rem;
+
+  display: grid;
+  place-items: center;
+
+  width: 1rem;
+  height: 1rem;
+  border: none;
+  border-radius: 50%;
+
+  color: #fff;
+
+  background: rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+}
+.tg-surface .ComposerEmbeddedMessage .embedded-attach-add {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px dashed var(--color-borders);
+  border-radius: 0.375rem;
+
+  color: var(--color-text-secondary);
+
+  background: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.tg-surface .ComposerEmbeddedMessage .embedded-attach-add:hover {
+  background: var(--color-chat-hover);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Poll-create modal + the lightweight composer hint toast.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.tg-surface .tg-poll-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.45);
+  animation: tgComposerFade 0.15s ease both;
+}
+.tg-surface .tg-poll-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+
+  width: 24rem;
+  max-width: 100%;
+  max-height: 90vh;
+  padding: 1rem 1.25rem 1.25rem;
+  border-radius: var(--border-radius-messages);
+
+  color: var(--color-text);
+
+  background: var(--color-background);
+  box-shadow: 0 0.75rem 2.5rem -0.5rem rgba(0, 0, 0, 0.4);
+}
+.tg-surface .tg-poll-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+.tg-surface .tg-poll-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: var(--font-weight-semibold, 600);
+}
+.tg-surface .tg-poll-x {
+  display: grid;
+  place-items: center;
+
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 50%;
+
+  color: var(--color-text-secondary);
+
+  background: none;
+  cursor: pointer;
+}
+.tg-surface .tg-poll-x:hover {
+  background: var(--color-chat-hover);
+}
+.tg-surface .tg-poll-label {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-primary);
+}
+.tg-surface .tg-poll-input {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--color-borders);
+  border-radius: 0.625rem;
+
+  font-size: 0.9375rem;
+  color: var(--color-text);
+
+  background: transparent;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.tg-surface .tg-poll-input:focus {
+  border-color: var(--color-primary);
+}
+.tg-surface .tg-poll-input::placeholder {
+  color: var(--color-placeholders);
+}
+.tg-surface .tg-poll-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.tg-surface .tg-poll-remove {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: 50%;
+
+  color: var(--color-text-secondary);
+
+  background: none;
+  cursor: pointer;
+}
+.tg-surface .tg-poll-remove:hover {
+  background: var(--color-chat-hover);
+}
+.tg-surface .tg-poll-add {
+  align-self: flex-start;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+
+  margin-top: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  border: none;
+
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-primary);
+
+  background: none;
+  cursor: pointer;
+}
+.tg-surface .tg-poll-create {
+  margin-top: 1rem;
+  padding: 0.625rem;
+  border: none;
+  border-radius: 0.75rem;
+
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-semibold, 600);
+  color: #fff;
+
+  background: var(--color-primary);
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.tg-surface .tg-poll-create:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.tg-surface .tg-poll-create:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.tg-surface .tg-composer-hint {
+  position: fixed;
+  bottom: 5rem;
+  left: 50%;
+  z-index: 50;
+  transform: translateX(-50%);
+
+  padding: 0.5rem 0.875rem;
+  border-radius: 1rem;
+
+  font-size: 0.8125rem;
+  color: #fff;
+
+  background: var(--color-toast-background, rgba(0, 0, 0, 0.8));
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  animation: tgComposerFade 0.15s ease both;
+}
+
+@keyframes tgComposerFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tg-surface .tg-poll-overlay,
+  .tg-surface .tg-composer-hint {
+    animation: none;
+  }
+}
+
+/* Bottom action bar shown INSTEAD of the composer when the account can't post to
+   the open chat — a full-width Join button (previewing a channel/group we're not
+   a member of) or a Mute/Unmute toggle (a joined broadcast we're not an admin of),
+   matching Telegram's bottom bar for those states. */
+.tg-surface .tg-chat-actionbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-background);
+  border-top: 1px solid var(--color-borders);
+}
+.tg-surface .tg-chat-actionbar-btn {
+  width: 100%;
+  max-width: 26rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-semibold, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-primary);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.tg-surface .tg-chat-actionbar-btn:hover {
+  background: var(--color-primary-opacity);
+}
+.tg-surface .tg-chat-actionbar-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.tg-surface .tg-chat-actionbar-btn--subtle {
+  color: var(--color-text-secondary);
+}
+.tg-surface .tg-chat-actionbar-btn--subtle:hover {
+  background: var(--color-chat-hover);
+}
+/* Read-only note (a grantee who may view but not send) — plain centered text. */
+.tg-surface .tg-chat-actionbar-note {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}

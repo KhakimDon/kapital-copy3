@@ -1,0 +1,42 @@
+# next/frontend — push to main triggers rebuild + recreate of the SPA
+# container (in-cluster nginx serving `dist/` + proxying `/api/*` to the
+# Rust backend). Same shell runner + tag as next/backend.
+#
+# The build takes ~30-60s (Vite + npm install cached across runs since
+# node_modules ships inside the image). The frontend container has no
+# health endpoint of its own — we probe the nginx root instead.
+
+stages:
+  - deploy
+
+variables:
+  STACK_DIR: /opt/aiba-next
+  REPO_DIR: /opt/aiba-next/next-frontend
+  IMAGE_TAG: aiba-next-frontend:latest
+  SERVICE: frontend
+  HEALTH_URL: http://127.0.0.1:18091/
+
+deploy:frontend:
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  tags:
+    - uic-shell
+  script:
+    - echo ">> deploying $CI_COMMIT_SHORT_SHA to $REPO_DIR"
+    - test -d "$REPO_DIR" || (echo "$REPO_DIR missing — clone once by hand"; exit 1)
+    - cd "$REPO_DIR"
+    - git fetch --quiet origin main
+    - git reset --hard origin/main
+    - cd "$STACK_DIR"
+    - sudo docker build -t "$IMAGE_TAG" "$REPO_DIR/"
+    - sudo docker compose -p aiba-next up -d --force-recreate "$SERVICE"
+    - echo ">> waiting for $SERVICE (nginx up)"
+    - |
+      for i in $(seq 1 15); do
+        if curl -fsm 3 "$HEALTH_URL" >/dev/null; then
+          echo "healthy in $((i*2))s"; exit 0
+        fi
+        sleep 2
+      done
+      echo "$SERVICE did not respond"; sudo docker compose -p aiba-next logs --tail=60 "$SERVICE"; exit 1

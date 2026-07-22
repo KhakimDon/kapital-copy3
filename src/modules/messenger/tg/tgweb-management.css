@@ -1,0 +1,723 @@
+/*
+ * Telegram Web A — RIGHT column GROUP/CHANNEL MANAGEMENT panel, ported from the
+ * real client's `right/management/Management.scss` (+ the ui/Checkbox.scss,
+ * ui/Radio.scss, ui/FloatingActionButton.scss, gili Island title/description,
+ * and the JoinRequest.scss it pulls in). It layers ON TOP of `tgweb-profile.css`
+ * — the shared right-column chrome (`.RightColumn`, `.RightHeader`, `.Island`,
+ * `.ListItem`, …) already lives there, so this file only adds what management
+ * needs: the `.Management` scroll body, section titles/descriptions, the
+ * `.Checkbox` / `.RadioGroup` primitives, the FloatingActionButton, the invite
+ * link rows, the join-request rows and the admin-rights summary.
+ *
+ * Everything is scoped under `.tg-surface` (never leaks) and reads its colours
+ * from `_foundation/tg-vars.css`. Original class names are kept so the port
+ * reads 1:1 against the reference.
+ */
+
+/* ── The scroll body (Management.scss .Management > .panel-content) ─────────── */
+/* Fills the column below the RightHeader (flex child, never taller than its box
+ * — the panel-content owns the scroll). */
+.tg-surface .Management {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* A tighter ProfileInfo for the management overview / edit-info avatar (the full
+ * 18rem-tall profile hero is too much for a settings header). */
+.tg-surface .ProfileInfo.compact {
+  min-height: auto;
+  padding: 1.25rem 1rem 0.75rem;
+}
+
+.tg-surface .Management > .panel-content {
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+
+  background-color: var(--color-background-secondary);
+}
+
+/* The big centred sticker/icon at the top of Invites / JoinRequests. */
+.tg-surface .Management .section-icon {
+  display: block;
+  margin: 0.5rem auto 1.25rem;
+  color: var(--color-primary);
+  opacity: 0.9;
+}
+
+/* ── gili IslandTitle / IslandDescription ──────────────────────────────────── */
+.tg-surface .IslandTitle {
+  margin: 1rem 1rem 0.5rem;
+
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.125rem;
+  color: var(--color-primary);
+
+  text-transform: none;
+  unicode-bidi: plaintext;
+}
+
+.tg-surface .IslandDescription {
+  margin: 0.5rem 1rem 0;
+
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  color: var(--color-text-secondary);
+
+  unicode-bidi: plaintext;
+}
+
+/* First Island right after a title hugs it. */
+.tg-surface .IslandTitle + .Island {
+  margin-top: 0.375rem;
+}
+
+/* Management stacks Islands with a comfortable rhythm. */
+.tg-surface .Management .Island {
+  margin: 0.75rem 0 0;
+}
+
+.tg-surface .Management .Island:first-child {
+  margin-top: 0;
+}
+
+/* ── ListItem tweaks specific to management (single-line + destructive) ─────── */
+.tg-surface .ListItem.narrow .ListItem-button {
+  min-height: 3.5rem;
+}
+
+/* single-line label that grows (used by nav rows without a subtitle) */
+.tg-surface .ListItem .single-line {
+  overflow: hidden;
+  flex-grow: 1;
+
+  font-size: 1rem;
+  line-height: 1.25rem;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tg-surface .ListItem.destructive .ListItem-button,
+.tg-surface .ListItem.destructive .ListItem-main-icon {
+  color: var(--color-error, #e2555a);
+}
+
+.tg-surface .ListItem.primary .ListItem-button,
+.tg-surface .ListItem.primary .ListItem-main-icon {
+  color: var(--color-primary);
+}
+
+/* A trailing count/chevron on a nav row. */
+.tg-surface .ListItem .row-aside {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-start: auto;
+
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.tg-surface .ListItem .row-chevron {
+  color: var(--color-text-secondary);
+  opacity: 0.75;
+}
+
+/* ── Checkbox (ui/Checkbox.scss) — a hidden input + drawn box + label ───────── */
+.tg-surface .Checkbox {
+  cursor: var(--custom-cursor, pointer);
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  min-height: 3rem;
+  margin-bottom: 0;
+  padding: 0.375rem 1rem;
+  border-radius: var(--border-radius-default, 0.75rem);
+
+  text-align: left;
+
+  transition: background-color 0.15s ease;
+}
+
+.tg-surface .Checkbox:hover {
+  background-color: var(--color-item-hover);
+}
+
+.tg-surface .Checkbox.disabled {
+  cursor: var(--custom-cursor, default);
+  opacity: 0.5;
+}
+
+.tg-surface .Checkbox.disabled:hover {
+  background: none;
+}
+
+.tg-surface .Checkbox > input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.tg-surface .Checkbox .Checkbox-box {
+  position: relative;
+
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-inline-end: 1.375rem;
+  border: 0.125rem solid var(--color-borders-input);
+  border-radius: 0.25rem;
+
+  color: #fff;
+
+  background-color: var(--color-background);
+
+  transition: border-color 0.1s ease, background-color 0.1s ease;
+}
+
+.tg-surface .Checkbox .Checkbox-box .Checkbox-check {
+  width: 1rem;
+  height: 1rem;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.tg-surface .Checkbox > input:checked ~ .Checkbox-box {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+}
+
+.tg-surface .Checkbox > input:checked ~ .Checkbox-box .Checkbox-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.tg-surface .Checkbox .Checkbox-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.tg-surface .Checkbox .Checkbox-label {
+  line-height: 1.5rem;
+  color: var(--color-text);
+  unicode-bidi: plaintext;
+  overflow-wrap: anywhere;
+}
+
+.tg-surface .Checkbox .Checkbox-subLabel {
+  margin-top: 0.0625rem;
+
+  font-size: 0.875rem;
+  line-height: 1rem;
+  color: var(--color-text-secondary);
+}
+
+/* emoji glyph rendered as a Checkbox label in the "some reactions" allow-list */
+.tg-surface .Checkbox .reaction-emoji {
+  font-size: 1.375rem;
+  line-height: 1.5rem;
+}
+
+/* ── Radio / RadioGroup (ui/Radio.scss) ────────────────────────────────────── */
+.tg-surface .RadioGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.tg-surface .Radio {
+  cursor: var(--custom-cursor, pointer);
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+  min-height: 3rem;
+  margin: 0;
+  padding: 0.375rem 1rem;
+  border-radius: var(--border-radius-default, 0.75rem);
+
+  text-align: left;
+
+  transition: background-color 0.15s ease;
+}
+
+.tg-surface .Radio:hover {
+  background-color: var(--color-item-hover);
+}
+
+.tg-surface .Radio.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.tg-surface .Radio > input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.tg-surface .Radio .Radio-circle {
+  position: relative;
+
+  flex-shrink: 0;
+
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-inline-end: 1.5rem;
+  border: 0.125rem solid var(--color-borders-input);
+  border-radius: 50%;
+
+  background-color: var(--color-background);
+
+  transition: border-color 0.1s ease;
+}
+
+.tg-surface .Radio .Radio-circle::after {
+  content: "";
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.4);
+
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+
+  opacity: 0;
+  background: var(--color-primary);
+
+  transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.tg-surface .Radio > input:checked ~ .Radio-circle {
+  border-color: var(--color-primary);
+}
+
+.tg-surface .Radio > input:checked ~ .Radio-circle::after {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.tg-surface .Radio .Radio-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.tg-surface .Radio .Radio-label {
+  line-height: 1.5rem;
+  color: var(--color-text);
+  unicode-bidi: plaintext;
+  overflow-wrap: anywhere;
+}
+
+.tg-surface .Radio .Radio-subLabel {
+  margin-top: 0.0625rem;
+
+  font-size: 0.875rem;
+  line-height: 1rem;
+  color: var(--color-text-secondary);
+}
+
+/* ── form controls (InputText / TextArea → ui/InputText.scss essentials) ─────
+ * A floating-label text field: a bordered input whose placeholder-label floats
+ * up when focused/filled. */
+.tg-surface .input-group {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.tg-surface .input-group:last-child {
+  margin-bottom: 0;
+}
+
+.tg-surface .form-control {
+  width: 100%;
+  height: 3.5rem;
+  padding: 1.0625rem 1rem 0;
+  border: 1px solid var(--color-borders-input);
+  border-radius: var(--border-radius-default, 0.75rem);
+
+  font-size: 1rem;
+  line-height: 1.25rem;
+  color: var(--color-text);
+
+  background-color: var(--color-background);
+  outline: none;
+
+  transition: border-color 0.15s ease;
+}
+
+.tg-surface .form-control:focus {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.tg-surface textarea.form-control {
+  height: auto;
+  min-height: 3.5rem;
+  padding-top: 1.0625rem;
+  resize: none;
+  line-height: 1.375rem;
+}
+
+.tg-surface .input-group > label {
+  pointer-events: none;
+
+  position: absolute;
+  top: 1.0625rem;
+  inset-inline-start: 1rem;
+
+  font-size: 1rem;
+  line-height: 1.25rem;
+  color: var(--color-text-secondary);
+
+  transform-origin: left center;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.tg-surface .input-group.touched > label,
+.tg-surface .form-control:focus + label {
+  transform: translateY(-0.6875rem) scale(0.75);
+}
+
+.tg-surface .form-control:focus + label {
+  color: var(--color-primary);
+}
+
+/* trailing max-length indicator on the description field */
+.tg-surface .input-group .max-length-indicator {
+  position: absolute;
+  top: 0.375rem;
+  inset-inline-end: 0.75rem;
+
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+/* ── FloatingActionButton (ui/FloatingActionButton.scss) ───────────────────── */
+.tg-surface .FloatingActionButton {
+  position: absolute;
+  z-index: 3;
+  right: 1.25rem;
+  bottom: 1.25rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 3.5rem;
+  height: 3.5rem;
+  border: none;
+  border-radius: 50%;
+
+  color: #fff;
+
+  cursor: var(--custom-cursor, pointer);
+  background-color: var(--color-primary);
+  box-shadow: 0 0.25rem 0.75rem var(--color-default-shadow);
+
+  opacity: 0;
+  transform: scale(0.5) translateY(1rem);
+  pointer-events: none;
+
+  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.15s ease;
+}
+
+.tg-surface .FloatingActionButton.shown {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
+}
+
+.tg-surface .FloatingActionButton:disabled {
+  cursor: var(--custom-cursor, default);
+  opacity: 0.6;
+}
+
+/* the RightColumn is the positioning context for the FAB */
+.tg-surface .RightColumn {
+  position: relative;
+}
+
+/* ── invite links (Management.scss .ManageInvites) ─────────────────────────── */
+.tg-surface .invite-primary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  padding: 0.75rem 1rem;
+}
+
+.tg-surface .invite-primary .invite-link-text {
+  overflow: hidden;
+  flex-grow: 1;
+
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+  color: var(--color-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tg-surface .link-status-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-inline-end: 1rem;
+  border-radius: 50%;
+
+  color: #fff;
+}
+
+.tg-surface .link-status-icon-gray {
+  background-color: #707579;
+}
+
+.tg-surface .link-status-icon-green {
+  background-color: #4fae4e;
+}
+
+.tg-surface .link-status-icon-red {
+  background-color: #e17076;
+}
+
+.tg-surface .link-status-icon-blue {
+  background-color: #3390ec;
+}
+
+.tg-surface .invite-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── link detail (Management.scss .ManageInviteInfo) ───────────────────────── */
+.tg-surface .link-detail-link {
+  margin: 0.5rem 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius-default, 0.75rem);
+
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  color: var(--color-text);
+  word-break: break-all;
+
+  background-color: var(--color-background);
+}
+
+/* ── join requests (JoinRequest.scss) ──────────────────────────────────────── */
+.tg-surface .JoinRequest {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0;
+}
+
+.tg-surface .JoinRequest:not(:last-child) {
+  border-bottom: 1px solid var(--color-borders);
+}
+
+.tg-surface .JoinRequest__top {
+  cursor: var(--custom-cursor, pointer);
+
+  display: flex;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+
+  transition: background-color 0.15s ease;
+}
+
+.tg-surface .JoinRequest__top:hover {
+  background-color: var(--color-chat-hover);
+}
+
+.tg-surface .JoinRequest__user {
+  overflow: hidden;
+  display: flex;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.tg-surface .JoinRequest__user-info {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  margin-inline-start: 1rem;
+}
+
+.tg-surface .JoinRequest__user-name {
+  overflow: hidden;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tg-surface .JoinRequest__user-subtitle {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tg-surface .JoinRequest__date {
+  flex-shrink: 0;
+  margin-inline-start: 1rem;
+
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.tg-surface .JoinRequest__buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-evenly;
+  margin-top: 1rem;
+}
+
+/* bulk accept/dismiss-all row */
+.tg-surface .bulk-actions {
+  display: flex;
+  justify-content: space-around;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* ── text buttons used in join-request rows + bulk actions ─────────────────── */
+.tg-surface .tg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 2.25rem;
+  padding: 0.375rem 1rem;
+  border: none;
+  border-radius: var(--border-radius-default, 0.75rem);
+
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+
+  cursor: var(--custom-cursor, pointer);
+  background: none;
+
+  transition: background-color 0.15s ease;
+}
+
+.tg-surface .tg-btn:hover {
+  background-color: var(--color-primary-opacity, rgba(51, 144, 236, 0.12));
+}
+
+.tg-surface .tg-btn.filled {
+  color: #fff;
+  background-color: var(--color-primary);
+}
+
+.tg-surface .tg-btn.filled:hover {
+  background-color: var(--color-primary-shade, var(--color-primary));
+}
+
+.tg-surface .tg-btn:disabled {
+  cursor: var(--custom-cursor, default);
+  opacity: 0.6;
+}
+
+/* ── admin-rights summary (ChatAdministrators row subtitle) ────────────────── */
+.tg-surface .admin-status {
+  color: var(--color-text-secondary);
+}
+
+.tg-surface .admin-status.owner {
+  color: var(--color-primary);
+}
+
+/* rank pill next to an admin's name */
+.tg-surface .admin-rank {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  padding-inline-start: 0.5rem;
+
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+/* ── loading / empty (NothingFound + Spinner) ──────────────────────────────── */
+.tg-surface .management-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+
+  padding: 3rem 1.5rem 0;
+
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.tg-surface .management-empty .empty-icon {
+  margin-bottom: 0.75rem;
+  opacity: 0.6;
+}
+
+.tg-surface .management-empty .empty-text {
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+}
+
+.tg-surface .management-spinner {
+  display: block;
+  width: 2rem;
+  height: 2rem;
+  margin: 2rem auto;
+  border: 0.1875rem solid var(--color-borders);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+
+  animation: tg-mgmt-spin 0.8s linear infinite;
+}
+
+@keyframes tg-mgmt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* a subtle inline hint under a section (honest "not yet wired" note) */
+.tg-surface .management-hint {
+  margin: 0.5rem 1rem 0;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--color-text-secondary);
+}

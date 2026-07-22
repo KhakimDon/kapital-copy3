@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/handler.mjs": {
+      "includeFiles": "mock/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/:p*", "destination": "/api/handler?p=:p*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

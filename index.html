@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <title>Kapital Business — Аналитика бизнеса</title>
+    <!-- Банковский UI всегда светлый: запрещаем Dark Reader перекрашивать. -->
+    <meta name="darkreader-lock" />
+    <!-- Дизайн-система Kapitalbank B2B: Wix Madefor Display -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Wix+Madefor+Display:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Mini-app внутри ДБО Kapital Business — всегда светлая тема.
+      // Логин-страница отключена: пользователь уже авторизован в ДБО банка,
+      // поэтому сессия mini-app подставляется автоматически (mock принимает
+      // любой токен).
+      try {
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem("aiba.theme", JSON.stringify({ state: { theme: "light" }, version: 0 }));
+        // Язык интерфейса ДБО — русский (как в макетах Kapital Business).
+        if (!localStorage.getItem("i18nextLng")) localStorage.setItem("i18nextLng", "ru");
+        var auth = null;
+        try { auth = JSON.parse(localStorage.getItem("aiba.auth") || "null"); } catch (e) {}
+        if (!auth || !auth.state || !auth.state.token) {
+          localStorage.setItem(
+            "aiba.auth",
+            JSON.stringify({ state: { token: "dbo-embedded-session", username: "demo" }, version: 0 })
+          );
+        }
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

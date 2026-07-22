@@ -1,0 +1,33 @@
+/*
+ * Real Telegram Web A Spoiler.scss, ported verbatim (BEM class names kept, dark
+ * variant driven by `.dark` instead of `html.theme-dark`). The dot textures are
+ * the actual Telegram assets copied into ./assets/.
+ */
+.Spoiler--concealed {
+  cursor: pointer;
+  border-radius: 0.5rem;
+  background-image: url("./assets/spoiler-dots-black.png");
+  background-size: auto min(100%, 1.125rem);
+}
+.dark .Spoiler--concealed {
+  background-image: url("./assets/spoiler-dots-white.png");
+}
+
+.Spoiler--animated {
+  animation: pulse-opacity-light 1.75s linear infinite;
+}
+
+.Spoiler__content {
+  opacity: 1;
+  transition: opacity 250ms ease;
+}
+.Spoiler--concealed .Spoiler__content {
+  user-select: none;
+  opacity: 0;
+}
+
+@keyframes pulse-opacity-light {
+  25% { opacity: 1; }
+  50% { opacity: 0.25; }
+  75% { opacity: 1; }
+}

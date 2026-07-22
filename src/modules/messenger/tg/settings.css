@@ -1,0 +1,74 @@
+/*
+ * Telegram-surface LOCAL settings — appearance overrides driven by the
+ * `tg-settings` store (settings-store.ts) and stamped as data-attributes on the
+ * `.tg-surface` roots by the workspace. This file only ADDS rules — theme.css is
+ * never touched. Two knobs:
+ *
+ *   data-tg-wallpaper="<preset>"  → chat background presets (below)
+ *   data-tg-textsize="s|m|l"      → message-bubble font size via --tg-msg-size
+ *
+ * Selectors come in two shapes so they work regardless of nesting:
+ *   • `.tg-surface[...] .tg-wallpaper`  — a wallpaper element nested under a
+ *     surface that carries the attribute (the live preview in settings.tsx).
+ *   • `.tg-surface.tg-wallpaper[...]`   — the chat <main>, where `.tg-surface`
+ *     and `.tg-wallpaper` sit on the SAME element.
+ * `default` needs no rule — theme.css's `.tg-wallpaper` already covers it.
+ */
+
+/* ── Message text size ─────────────────────────────────────────────────────── */
+/* The bubble font-size is a literal (`text-[14.5px]`) in message-bubble.tsx; we
+ * can't edit that file, so we override the existing `.tg-bubble` class here. The
+ * size is expressed as a custom property so it's easy to reason about. */
+.tg-surface[data-tg-textsize] { --tg-msg-size: 14.5px; }
+.tg-surface[data-tg-textsize="s"] { --tg-msg-size: 13px; }
+.tg-surface[data-tg-textsize="m"] { --tg-msg-size: 14.5px; }
+.tg-surface[data-tg-textsize="l"] { --tg-msg-size: 16.5px; }
+.tg-surface[data-tg-textsize] .tg-bubble { font-size: var(--tg-msg-size); }
+
+/* ── Wallpaper: solid ──────────────────────────────────────────────────────── */
+.tg-surface[data-tg-wallpaper="solid"] .tg-wallpaper,
+.tg-surface.tg-wallpaper[data-tg-wallpaper="solid"] {
+  background-color: #d5dbe3;
+  background-image: none;
+}
+.dark .tg-surface[data-tg-wallpaper="solid"] .tg-wallpaper,
+.dark .tg-surface.tg-wallpaper[data-tg-wallpaper="solid"] {
+  background-color: #0e1621;
+  background-image: none;
+}
+
+/* ── Wallpaper: ocean ──────────────────────────────────────────────────────── */
+.tg-surface[data-tg-wallpaper="ocean"] .tg-wallpaper,
+.tg-surface.tg-wallpaper[data-tg-wallpaper="ocean"] {
+  background-color: #cfe3f5;
+  background-image: linear-gradient(160deg, #dbeafe 0%, #bfdbf5 45%, #a9cdf0 100%);
+}
+.dark .tg-surface[data-tg-wallpaper="ocean"] .tg-wallpaper,
+.dark .tg-surface.tg-wallpaper[data-tg-wallpaper="ocean"] {
+  background-color: #0c1a29;
+  background-image: linear-gradient(160deg, #0e2136 0%, #0c1a29 50%, #10263c 100%);
+}
+
+/* ── Wallpaper: sunset ─────────────────────────────────────────────────────── */
+.tg-surface[data-tg-wallpaper="sunset"] .tg-wallpaper,
+.tg-surface.tg-wallpaper[data-tg-wallpaper="sunset"] {
+  background-color: #f5d9c8;
+  background-image: linear-gradient(160deg, #ffe3d0 0%, #f7cdbb 45%, #f0c0c9 100%);
+}
+.dark .tg-surface[data-tg-wallpaper="sunset"] .tg-wallpaper,
+.dark .tg-surface.tg-wallpaper[data-tg-wallpaper="sunset"] {
+  background-color: #241521;
+  background-image: linear-gradient(160deg, #2e1a24 0%, #241521 50%, #331d24 100%);
+}
+
+/* ── Wallpaper: forest ─────────────────────────────────────────────────────── */
+.tg-surface[data-tg-wallpaper="forest"] .tg-wallpaper,
+.tg-surface.tg-wallpaper[data-tg-wallpaper="forest"] {
+  background-color: #d3e3ca;
+  background-image: linear-gradient(160deg, #dcecd0 0%, #c9dcbd 45%, #cfe0c3 100%);
+}
+.dark .tg-surface[data-tg-wallpaper="forest"] .tg-wallpaper,
+.dark .tg-surface.tg-wallpaper[data-tg-wallpaper="forest"] {
+  background-color: #101c14;
+  background-image: linear-gradient(160deg, #132318 0%, #101c14 50%, #16261a 100%);
+}

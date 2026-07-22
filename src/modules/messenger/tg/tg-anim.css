@@ -1,0 +1,76 @@
+/* Telegram-surface animation gating.
+ *
+ * The messenger workspace stamps `data-tg-anim="full" | "reduced" | "none"` on
+ * every `.tg-surface` root from the persisted `animationLevel` (settings-store.ts,
+ * chosen on the Animations settings screen). This stylesheet is the ONLY thing
+ * that makes that choice actually gate animations:
+ *
+ *   • full    — no overrides here; every animation / transition runs as authored.
+ *   • reduced — heavy / looping / decorative + entrance animations (slide-in /
+ *               zoom / pop / shimmer) are switched off, while basic hover &
+ *               opacity transitions are kept. Extends the same selectors the tg
+ *               CSS already neutralises under `@media (prefers-reduced-motion)`.
+ *   • none    — a blanket gate: every animation & transition is collapsed to an
+ *               instant and smooth scrolling is disabled.
+ *
+ * NOTE: animated stickers / TGS are Lottie (JS-driven SVG), so their autoplay is
+ * governed by the `autoplayStickers` / `autoplayGifs` toggles + JS — not by CSS.
+ * Only the CSS-keyframe decorations found in the tgweb-*.css files are targeted.
+ */
+
+/* ── none — blanket gate ─────────────────────────────────────────────────────
+ * Everything inside a `none` surface (and its pseudo-elements) is collapsed to an
+ * instant so no animation or transition is perceptible. */
+.tg-surface[data-tg-anim="none"] *,
+.tg-surface[data-tg-anim="none"] *::before,
+.tg-surface[data-tg-anim="none"] *::after {
+  animation-duration: 0.001s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0.001s !important;
+  scroll-behavior: auto !important;
+}
+
+/* ── reduced — drop heavy / looping / decorative + entrance animations ────────
+ * Basic hover / opacity transitions are intentionally left running. */
+
+/* Pop-over & menu ENTRANCE animations (tgMenuIn zoom, tgComposerFade,
+ * tg-toast-in slide-in): the panels appear in place instead of animating in. */
+.tg-surface[data-tg-anim="reduced"] .Menu.main-menu,
+.tg-surface[data-tg-anim="reduced"] .Menu.main-menu .bubble,
+.tg-surface[data-tg-anim="reduced"] .MessageContextMenu,
+.tg-surface[data-tg-anim="reduced"] .AttachMenu--menu,
+.tg-surface[data-tg-anim="reduced"] .tg-symbol-menu,
+.tg-surface[data-tg-anim="reduced"] .TextFormatter,
+.tg-surface[data-tg-anim="reduced"] .tg-send-menu,
+.tg-surface[data-tg-anim="reduced"] .tg-reaction-picker,
+.tg-surface[data-tg-anim="reduced"] .tg-poll-overlay,
+.tg-surface[data-tg-anim="reduced"] .tg-composer-hint,
+.tg-surface[data-tg-anim="reduced"] .tg-toast {
+  animation: none !important;
+}
+
+/* Looping / decorative flourishes: skeleton shimmer (tg-skel), chat-list ripple
+ * (tg-ripple), reaction pop (tg-reaction-pop), recording blink (tgComposerRecBlink). */
+.tg-surface[data-tg-anim="reduced"] .member-avatar.skeleton,
+.tg-surface[data-tg-anim="reduced"] .skeleton-line,
+.tg-surface[data-tg-anim="reduced"] .media-thumb.skeleton,
+.tg-surface[data-tg-anim="reduced"] .shared-row-icon.skeleton,
+.tg-surface[data-tg-anim="reduced"] .Chat .ripple-wave,
+.tg-surface[data-tg-anim="reduced"] .message-reaction.chosen,
+.tg-surface[data-tg-anim="reduced"] .recording-state::after {
+  animation: none !important;
+}
+
+/* Typing indicators (tg-typing-bounce / tg-typing-blink): keep the dots visible
+ * but stop the looping motion — matches the reference reduced-motion treatment. */
+.tg-surface[data-tg-anim="reduced"] .Chat .typing-dots i,
+.tg-surface[data-tg-anim="reduced"] .MiddleHeader .tg-typing-dot {
+  animation: none !important;
+  opacity: 0.6;
+}
+
+/* The staggered reaction-selector pop (tgReactionIn) is a pure entrance flourish. */
+.tg-surface[data-tg-anim="reduced"] .ReactionSelectorReaction {
+  animation: none !important;
+  transition: none !important;
+}

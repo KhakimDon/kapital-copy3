@@ -1,0 +1,972 @@
+/*
+ * Telegram Web A — RIGHT column profile panel, ported 1:1 from the real client's
+ *   • right/RightColumn.scss   (the pinned column chrome)
+ *   • right/RightHeader.scss    (the header strip: close/back + title + tools)
+ *   • right/Profile.module.scss (the scrolling body + shared-media tabs)
+ *   • common/profile/ProfileInfo.{scss,module.scss} (big avatar + title + status)
+ *   • common/profile/ChatExtra.module.scss + ui/ListItem.scss + gili Island
+ *     (the rounded info card of icon + value/label rows)
+ *   • ui/Tab.scss (the shared-media tab strip with the sliding `.platform` bar)
+ *
+ * Every top-level selector is scoped under `.tg-surface` so it can never leak.
+ * The original class names are kept (`.RightColumn`, `.RightHeader`, `.Profile`,
+ * `.ProfileInfo`, `.ChatExtra`, `.Island`, `.ListItem`, `.Tab`, …) so the port
+ * reads 1:1 against the source. Colour tokens come from `_foundation/tg-vars.css`
+ * (already on `.tg-surface`); the few sizing/radius tokens below are lifted from
+ * `src/styles/_variables.scss`.
+ */
+
+.tg-surface {
+  /* sizing tokens the right column needs (from _variables.scss) */
+  --column-header-height: 4rem;
+  --border-radius-island: 1.5rem;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+}
+
+/* ── The column (RightColumn.scss #RightColumn essentials) ─────────────────
+ * The reference floats a rounded island; here the panel is embedded as a flush
+ * right column (the chat-pane owns the slide-in + backdrop), so we keep the
+ * secondary background + a left divider and drop the island radius/shadow. */
+.tg-surface .RightColumn {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+
+  width: 22rem;
+  max-width: 100%;
+  height: 100%;
+
+  background-color: var(--color-background-secondary);
+  border-left: 1px solid var(--color-borders);
+}
+
+/* ── RightHeader.scss ──────────────────────────────────────────────────────
+ * A flex row: close/back button, then the title, then the right-hand tools. The
+ * reference header sits on --color-background but switches to secondary while the
+ * profile is un-scrolled; our panel is a single secondary surface, so it stays
+ * secondary throughout. */
+.tg-surface .RightHeader {
+  display: flex;
+  align-items: center;
+
+  height: var(--column-header-height);
+  padding: 0.5rem 0.8125rem;
+
+  background-color: var(--color-background-secondary);
+}
+
+.tg-surface .RightHeader .close-button {
+  flex-shrink: 0;
+}
+
+.tg-surface .RightHeader .title {
+  margin-bottom: 0;
+  margin-left: 1.1875rem;
+
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5rem;
+  color: var(--color-text);
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tg-surface .RightHeader .tools {
+  display: flex;
+  margin-left: auto;
+}
+
+/* Round translucent icon Button used in the header (Button color="translucent"
+ * round size="smaller"). */
+.tg-surface .RightColumn .Button {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+
+  color: var(--color-text-secondary);
+
+  cursor: var(--custom-cursor, pointer);
+  background: none;
+  outline: none;
+
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tg-surface .RightColumn .Button:hover {
+  background-color: var(--color-background-compact-menu-hover);
+}
+
+/* ── Profile.module.scss — the scrolling body ─────────────────────────────── */
+.tg-surface .Profile {
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+
+  min-height: 0;
+}
+
+.tg-surface .Profile .profile-info {
+  background-color: var(--color-background-secondary);
+}
+
+/* ── ProfileInfo.module.scss (.plain.minimized) — big centred avatar block ──
+ * The reference top-packs a jumbo (7.5rem) avatar + title/status inside its
+ * `place-items:center` grid (`padding-block: 1.5rem 0`); we mirror that as a
+ * horizontally-centred, top-aligned flex column so the avatar sits just under
+ * the header and the slack falls below the status (before the info island),
+ * exactly like the real client. */
+.tg-surface .ProfileInfo {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+
+  min-height: 15.5rem;
+  padding: 1.5rem 1rem 1.25rem;
+
+  text-align: center;
+  color: var(--color-text);
+  background-color: var(--color-background-secondary);
+}
+
+.tg-surface .ProfileInfo .Avatar {
+  width: 7.5rem !important;
+  height: 7.5rem !important;
+  font-size: 3.5rem;
+}
+
+.tg-surface .ProfileInfo .info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  max-width: 100%;
+  margin-top: 1rem;
+}
+
+/* FullNameTitle → .fullName / .title (ProfileInfo.scss) */
+.tg-surface .ProfileInfo .fullName {
+  max-width: 100%;
+  margin-bottom: 0;
+
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.375rem;
+  color: var(--color-text);
+
+  overflow-wrap: anywhere;
+}
+
+.tg-surface .ProfileInfo .status {
+  display: flex;
+  align-items: center;
+
+  margin-top: 0.375rem;
+
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  color: var(--color-text-secondary);
+}
+
+.tg-surface .ProfileInfo .status.online {
+  color: var(--color-primary);
+}
+
+/* ── ChatExtra.module.scss + Island.module.scss + ListItem.scss ───────────── */
+.tg-surface .ChatExtra {
+  margin: 1rem;
+  margin-bottom: 0;
+}
+
+/* gili Island — the raised rounded card the info rows sit in */
+.tg-surface .Island {
+  padding: 0.5rem;
+  border-radius: var(--border-radius-island);
+
+  background-color: var(--color-background);
+  box-shadow: 0 1px 4px 0 #0000000d;
+}
+
+/* ListItem row (multiline narrow) */
+.tg-surface .ListItem {
+  position: relative;
+}
+
+.tg-surface .ListItem-button {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  min-height: 3rem;
+  padding: 0 1rem;
+  border: none;
+  border-radius: var(--border-radius-default);
+
+  color: var(--color-text);
+  text-align: initial;
+  white-space: nowrap;
+
+  background: none;
+  outline: none;
+
+  transition: background-color 0.15s ease-in-out;
+}
+
+.tg-surface .ListItem.has-ripple .ListItem-button {
+  cursor: var(--custom-cursor, pointer);
+}
+
+.tg-surface .ListItem.has-ripple .ListItem-button:hover {
+  background-color: var(--color-item-hover);
+}
+
+.tg-surface .ListItem-button > .ListItem-main-icon {
+  flex-shrink: 0;
+  margin-inline-end: 1.75rem;
+  color: var(--color-text-secondary);
+}
+
+.tg-surface .ListItem.multiline .ListItem-button > .ListItem-main-icon {
+  align-self: center;
+}
+
+.tg-surface .ListItem .multiline-item {
+  overflow: hidden;
+  flex-grow: 1;
+  padding: 0.4375rem 0 0.5625rem;
+
+  white-space: initial;
+}
+
+.tg-surface .ListItem .multiline-item .title {
+  display: block;
+
+  overflow: hidden;
+
+  line-height: 1.25rem;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+
+  unicode-bidi: plaintext;
+}
+
+.tg-surface .ListItem .multiline-item .title.word-break {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+/* not-yet-available value → the placeholder colour */
+.tg-surface .ListItem .multiline-item .title.placeholder {
+  color: var(--color-text-secondary);
+}
+
+.tg-surface .ListItem .multiline-item .subtitle {
+  display: block;
+
+  margin-top: 0.25rem;
+
+  font-size: 0.875rem;
+  line-height: 1rem;
+  color: var(--color-text-secondary);
+
+  unicode-bidi: plaintext;
+}
+
+/* trailing round icon Button (copy) — ListItem secondary-icon */
+.tg-surface .ListItem .secondary-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 2rem;
+  height: 2rem;
+  margin-inline-start: auto;
+  border: none;
+  border-radius: 50%;
+
+  color: var(--color-text-secondary);
+
+  cursor: var(--custom-cursor, pointer);
+  background: none;
+
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tg-surface .ListItem .secondary-icon:hover {
+  background-color: var(--color-item-hover);
+}
+
+.tg-surface .ListItem .secondary-icon.copied {
+  color: var(--color-message-meta-own);
+}
+
+/* ── Profile.module.scss .sharedMediaTabs + ui/Tab.scss ───────────────────── */
+.tg-surface .shared-media-tabs {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+
+  margin-top: 1rem;
+  padding-inline: 1rem;
+
+  background-color: var(--color-background-secondary);
+}
+
+.tg-surface .TabList {
+  position: relative;
+  display: flex;
+
+  box-shadow: inset 0 -1px 0 0 var(--color-dividers);
+}
+
+.tg-surface .Tab {
+  position: relative;
+
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: center;
+
+  padding: 0.625rem 1.125rem;
+  border: none;
+  border-top-left-radius: var(--border-radius-messages-small);
+  border-top-right-radius: var(--border-radius-messages-small);
+
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+
+  cursor: var(--custom-cursor, pointer);
+  appearance: none;
+  background: none;
+  outline: none;
+
+  transition: color 0.15s ease;
+}
+
+.tg-surface .Tab:not(.Tab--active):hover {
+  background: var(--color-item-hover);
+}
+
+.tg-surface .Tab--active {
+  cursor: var(--custom-cursor, default);
+  color: var(--color-primary);
+}
+
+.tg-surface .Tab .Tab_inner {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  height: 1.5rem;
+
+  white-space: nowrap;
+}
+
+.tg-surface .Tab .platform {
+  pointer-events: none;
+
+  position: absolute;
+  right: -0.5rem;
+  bottom: -0.625rem;
+  left: -0.5rem;
+
+  height: 0.1875rem;
+  border-radius: 0.1875rem 0.1875rem 0 0;
+
+  opacity: 0;
+  background-color: var(--color-primary);
+}
+
+.tg-surface .Tab--active .platform {
+  opacity: 1;
+}
+
+/* ── Profile.module.scss .sharedMedia + .content.emptyList ────────────────── */
+.tg-surface .shared-media {
+  position: relative;
+
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+
+  margin-top: 1rem;
+}
+
+.tg-surface .shared-media .content.emptyList {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+
+  height: 100%;
+  padding: 5rem 1.5rem 0;
+
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.tg-surface .shared-media .content.emptyList .empty-icon {
+  margin-bottom: 0.75rem;
+  opacity: 0.6;
+}
+
+.tg-surface .shared-media .content.emptyList .empty-text {
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+}
+
+/* an honest note (TgUserProfile) — a TG user, not an AIBA account */
+.tg-surface .Profile .profile-note {
+  margin: 0.75rem 1rem 0;
+
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  color: var(--color-text-secondary);
+}
+
+/* ── name badges (verified / premium / scam / fake) ─────────────────────────
+ * The reference lays verified/premium as small inline icons right after the
+ * FullNameTitle, and scam/fake as a red uppercase pill. */
+.tg-surface .ProfileInfo .fullName {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.tg-surface .ProfileInfo .fullName .fullName-text {
+  overflow-wrap: anywhere;
+}
+
+.tg-surface .name-badge {
+  flex-shrink: 0;
+  width: 1.1875rem;
+  height: 1.1875rem;
+}
+
+.tg-surface .name-badge.verified {
+  color: var(--color-primary);
+}
+
+.tg-surface .name-badge.premium {
+  color: var(--color-primary);
+  fill: var(--color-primary);
+}
+
+.tg-surface .name-badge-pill {
+  flex-shrink: 0;
+  padding: 0.0625rem 0.3125rem;
+  border-radius: 0.5rem;
+
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #fff;
+
+  background-color: #e2555a;
+}
+
+/* ── notifications toggle row (its own Island) ──────────────────────────────
+ * A single-line ListItem: bell main-icon + label that grows + a trailing
+ * Switch. The whole row is a <label htmlFor> so a click anywhere toggles. */
+.tg-surface .toggle-item .ListItem-button {
+  min-height: 3.5rem;
+  cursor: var(--custom-cursor, pointer);
+}
+
+.tg-surface .toggle-item .ListItem-button:hover {
+  background-color: var(--color-item-hover);
+}
+
+.tg-surface .toggle-item .toggle-label {
+  overflow: hidden;
+  flex-grow: 1;
+
+  font-size: 1rem;
+  line-height: 1.25rem;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tg-surface .toggle-item .toggle-switch {
+  flex-shrink: 0;
+  margin-inline-start: 1rem;
+}
+
+/* ── members list (Members tab, groups/channels) ────────────────────────────
+ * Rows of avatar + name/status + an Owner (accent pill) / Admin (muted) badge,
+ * mirroring the reference `MemberList` under the shared-media area. */
+.tg-surface .members-list {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 1rem;
+}
+
+.tg-surface .member-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  min-height: 3.5rem;
+  padding: 0.375rem 1rem;
+
+  cursor: var(--custom-cursor, pointer);
+  transition: background-color 0.15s ease;
+}
+
+.tg-surface .member-row:hover {
+  background-color: var(--color-item-hover);
+}
+
+.tg-surface .member-avatar {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.tg-surface .member-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.tg-surface .member-name {
+  overflow: hidden;
+
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tg-surface .member-status {
+  overflow: hidden;
+  margin-top: 0.0625rem;
+
+  font-size: 0.8125rem;
+  line-height: 1rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tg-surface .member-status.online {
+  color: var(--color-primary);
+}
+
+.tg-surface .member-badge {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.tg-surface .member-badge.admin {
+  color: var(--color-text-secondary);
+}
+
+.tg-surface .member-badge.owner {
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.75rem;
+
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-medium);
+  color: #fff;
+
+  background-color: var(--color-primary);
+}
+
+/* member loading skeleton (avatar disc + two lines) */
+.tg-surface .member-avatar.skeleton,
+.tg-surface .skeleton-line {
+  background-color: var(--color-background-secondary-accent);
+  animation: tg-skel 1.2s ease-in-out infinite;
+}
+
+.tg-surface .skeleton-line {
+  display: block;
+  height: 0.625rem;
+  margin: 0.25rem 0;
+  border-radius: 0.3125rem;
+}
+
+.tg-surface .skeleton-line.short {
+  height: 0.5rem;
+}
+
+@keyframes tg-skel {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* ── shared-media: a scrollable tab strip (7 tabs) ──────────────────────────
+ * With Members + Media/Files/Links/Music/GIFs/Voice the strip no longer fits a
+ * 22rem column, so the TabList scrolls horizontally (the reference fades + swipes;
+ * here it simply scrolls) and each Tab keeps its natural width. */
+.tg-surface .shared-media-tabs .TabList {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tg-surface .shared-media-tabs .TabList::-webkit-scrollbar {
+  display: none;
+}
+
+.tg-surface .shared-media-tabs .Tab {
+  /* Fill the strip when the tabs fit; keep their natural width and let the
+   * TabList scroll when they don't (grow, never shrink below the label). */
+  flex: 1 0 auto;
+}
+
+/* ── shared-media: photo/video + gif mosaic (.content.mediaList/.gifList) ──── */
+.tg-surface .shared-media .content.mediaList,
+.tg-surface .shared-media .content.gifList {
+  display: grid;
+  grid-auto-rows: 1fr;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.0625rem;
+
+  padding-bottom: 1rem;
+}
+
+.tg-surface .media-thumb {
+  position: relative;
+
+  overflow: hidden;
+
+  aspect-ratio: 1 / 1;
+
+  cursor: var(--custom-cursor, pointer);
+  background-color: var(--color-background-secondary-accent);
+}
+
+.tg-surface .media-thumb > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tg-surface .media-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+
+  color: var(--color-text-secondary);
+}
+
+/* only the four outer corners of the whole mosaic round (getGridCornerClassName) */
+.tg-surface .media-thumb.roundTopStart {
+  border-top-left-radius: 0.75rem;
+}
+.tg-surface .media-thumb.roundTopEnd {
+  border-top-right-radius: 0.75rem;
+}
+.tg-surface .media-thumb.roundBottomStart {
+  border-bottom-left-radius: 0.75rem;
+}
+.tg-surface .media-thumb.roundBottomEnd {
+  border-bottom-right-radius: 0.75rem;
+}
+
+.tg-surface .media-thumb-play {
+  pointer-events: none;
+
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #fff;
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.5));
+}
+
+.tg-surface .media-thumb-badge {
+  pointer-events: none;
+
+  position: absolute;
+  bottom: 0.25rem;
+  left: 0.25rem;
+
+  padding: 0.0625rem 0.3125rem;
+  border-radius: 0.375rem;
+
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+/* ── shared-media: document / music / voice / link lists ────────────────────── */
+.tg-surface .shared-media .content.documentsList,
+.tg-surface .shared-media .content.audioList,
+.tg-surface .shared-media .content.voiceList,
+.tg-surface .shared-media .content.linksList {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0.5rem 1rem;
+}
+
+.tg-surface .shared-row {
+  display: flex;
+  align-items: center;
+
+  border-radius: 0.75rem;
+
+  transition: background-color 0.15s ease;
+}
+
+.tg-surface .shared-row:hover {
+  background-color: var(--color-item-hover);
+}
+
+.tg-surface .shared-row-icon {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0.5rem 0.75rem 0.5rem 0.5rem;
+  border-radius: 50%;
+}
+
+.tg-surface .shared-row-lines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* a link card (no webpage preview → an entity-rendered text card) */
+.tg-surface .shared-link-card {
+  display: block;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.75rem;
+
+  text-decoration: none;
+
+  transition: background-color 0.15s ease;
+}
+
+.tg-surface .shared-link-card:hover {
+  background-color: var(--color-item-hover);
+}
+
+.tg-surface .shared-link-title {
+  overflow: hidden;
+  display: block;
+
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-links, var(--color-primary));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tg-surface .shared-link-text {
+  display: block;
+  margin-top: 0.125rem;
+
+  font-size: 0.875rem;
+  line-height: 1.2rem;
+  color: var(--color-text);
+
+  overflow-wrap: anywhere;
+}
+
+/* the load-more sentinel (observed against the .Profile scroll container) */
+.tg-surface .shared-sentinel {
+  width: 100%;
+  height: 1px;
+}
+
+/* new skeleton shapes reuse the tg-skel shimmer */
+.tg-surface .media-thumb.skeleton,
+.tg-surface .shared-row-icon.skeleton {
+  background-color: var(--color-background-secondary-accent);
+  animation: tg-skel 1.2s ease-in-out infinite;
+}
+
+/* ── ProfileChannel card (ChatExtra.module.scss .personalChannel*) ──────────── */
+.tg-surface .personalChannel {
+  display: grid;
+  grid-template-rows: auto auto;
+  grid-template-columns: 1fr auto;
+  column-gap: 0.5rem;
+
+  margin-bottom: 1rem;
+}
+
+.tg-surface .personalChannelTitle {
+  grid-row: 1;
+  grid-column: 1;
+
+  margin: 0 0 0 0.5rem;
+
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.tg-surface .personalChannelSubscribers {
+  grid-row: 1;
+  grid-column: 2;
+
+  margin-inline-end: 0.5rem;
+
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.tg-surface .personalChannelItem {
+  overflow: hidden;
+  grid-row: 2;
+  grid-column: 1 / span 2;
+
+  margin-top: 0.375rem;
+  padding: 0;
+}
+
+.tg-surface .chat-preview {
+  width: 100%;
+  min-height: 4rem;
+  gap: 0.9375rem;
+
+  border-radius: var(--border-radius-island);
+  cursor: var(--custom-cursor, pointer);
+}
+
+.tg-surface .chat-preview:hover {
+  background-color: var(--color-item-hover);
+}
+
+.tg-surface .chat-preview-avatar {
+  flex-shrink: 0;
+}
+
+.tg-surface .chat-preview-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tg-surface .chat-preview-title {
+  overflow: hidden;
+
+  font-size: 1rem;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25rem;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tg-surface .chat-preview-sub {
+  overflow: hidden;
+
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── emoji status next to the name (ProfileInfo FullNameTitle) ──────────────── */
+.tg-surface .name-emoji-status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 1.375rem;
+  height: 1.375rem;
+
+  vertical-align: middle;
+}
+
+.tg-surface .name-emoji-status > img,
+.tg-surface .name-emoji-status > video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ── per-member context menu (Open profile / Message) ───────────────────────── */
+.tg-surface .member-menu {
+  position: absolute;
+  z-index: 61;
+
+  min-width: 11rem;
+  padding: 0.375rem;
+  border-radius: 0.75rem;
+
+  background-color: var(--color-background-compact-menu, var(--color-background));
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+}
+
+.tg-surface .member-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  text-align: start;
+  white-space: nowrap;
+
+  cursor: var(--custom-cursor, pointer);
+  background: none;
+
+  transition: background-color 0.15s ease;
+}
+
+.tg-surface .member-menu-item:hover {
+  background-color: var(--color-item-hover);
+}
+
+.tg-surface .member-menu-item > svg {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}

@@ -1,0 +1,855 @@
+/*
+ * Telegram Stories ("statuslar") — ribbon + full-screen viewer, ported from
+ * Telegram Web A's story/StoryRibbon.module.scss, story/StoryProgress.module.scss,
+ * story/StoryViewer.module.scss and common/AvatarStoryCircle.
+ *
+ * The ribbon lives inside the left column, so its selectors are scoped
+ * `.tg-surface .StoryRibbon…`. The viewer portals to <body> with `.tg-surface`
+ * on its OWN root (same pattern as media-viewer.tsx), so the root is styled via
+ * `.StoryViewer` directly and its descendants via `.tg-surface .StoryViewer__…`
+ * (they resolve the same --color-* tokens the root provides). The viewer chrome
+ * is always dark (stories render on a black stage regardless of app theme).
+ */
+
+/* ── ribbon (StoryRibbon.module.scss) ─────────────────────────────────────── */
+.tg-surface .StoryRibbon {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+  column-gap: 0.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-bottom: 0.25rem;
+  padding: 0.5rem 0.5rem 0.625rem 0.75rem;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--color-borders);
+  scrollbar-width: none;
+}
+.tg-surface .StoryRibbon::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* one peer button (.peer) — avatar-with-ring stacked over a name */
+.tg-surface .StoryRibbon__peer {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  width: 4.25rem;
+  padding: 0;
+  border: none;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  background: none;
+  cursor: pointer;
+  outline: none;
+}
+
+/* name (.name) — dimmed when all-seen, solid + medium when unread */
+.tg-surface .StoryRibbon__name {
+  overflow: hidden;
+  max-width: 100%;
+  margin-top: 0.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tg-surface .StoryRibbon__name--unread {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium, 500);
+}
+
+/* segmented ring wrapper (AvatarStoryCircle) — the canvas draws the arcs, the
+   inner span holds the avatar, centered inside the ring's clearance */
+.tg-surface .StoryCircle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.tg-surface .StoryCircle__canvas {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  pointer-events: none;
+}
+.tg-surface .StoryCircle__inner {
+  position: relative;
+  display: block;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+/* end-of-strip collapse chevron */
+.tg-surface .StoryRibbon__collapse {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-inline-start: 0.25rem;
+  border: none;
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+  background: var(--color-background-secondary);
+  cursor: pointer;
+}
+.tg-surface .StoryRibbon__collapse:hover {
+  color: var(--color-text);
+}
+
+/* collapsed toggler pill (StoryToggler) — a few overlapping avatars */
+.tg-surface .StoryRibbon__toggler {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin: 0.375rem 0.5rem 0.5rem 0.75rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-background-secondary);
+  cursor: pointer;
+}
+.tg-surface .StoryRibbon__togglerAvatar {
+  position: relative;
+  display: block;
+  border-radius: 50%;
+}
+
+/* per-peer context menu (portaled) */
+.tg-surface .StoryRibbon__menu {
+  position: fixed;
+  z-index: 130;
+  min-width: 11rem;
+  padding: 0.375rem;
+  border-radius: 0.75rem;
+  background: var(--color-background);
+  box-shadow: 0 8px 30px var(--color-default-shadow), 0 0 1px var(--color-default-shadow);
+}
+.tg-surface .StoryRibbon__menuItem {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  text-align: start;
+  background: none;
+  cursor: pointer;
+}
+.tg-surface .StoryRibbon__menuItem:hover {
+  background: var(--color-item-hover);
+}
+
+/* ribbon toast (portaled) */
+.tg-surface.StoryRibbon__toast,
+.tg-surface .StoryRibbon__toast {
+  position: fixed;
+  z-index: 140;
+  left: 50%;
+  bottom: 2rem;
+  transform: translateX(-50%);
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #fff;
+  background: var(--color-toast-background, rgba(0, 0, 0, 0.8));
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* ── viewer root + open/close ghost morph ─────────────────────────────────── */
+.StoryViewer {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+.tg-surface .StoryViewer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.StoryViewer--open .StoryViewer__backdrop {
+  opacity: 1;
+}
+
+/* the deck holds the peer slides; it scales/translates from the ribbon avatar on
+   open and back on close. pointer-events:none so empty areas close the viewer —
+   only the active slide + previews (below) re-enable them. */
+.tg-surface .StoryViewer__deck {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+/* ── one peer slide in the deck ───────────────────────────────────────────── */
+.tg-surface .StoryViewer__slide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%) translateX(var(--slide-x, 0px));
+  transition: transform 350ms ease;
+}
+.tg-surface .StoryViewer__slide--active {
+  z-index: 2;
+}
+.tg-surface .StoryViewer__slideScale {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 50%;
+  transform: scale(var(--slide-scale, 1));
+  transition: transform 350ms ease;
+}
+
+/* active story surface */
+.tg-surface .StoryViewer__slideInner {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  overflow: hidden;
+  border-radius: 0.625rem;
+  background: #000;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+/* while holding to pause, hide the chrome (like the real client) */
+.tg-surface .StoryViewer__slideInner--holding .StoryViewer__scrimTop,
+.tg-surface .StoryViewer__slideInner--holding .StoryViewer__indicators,
+.tg-surface .StoryViewer__slideInner--holding .StoryViewer__header,
+.tg-surface .StoryViewer__slideInner--holding .StoryViewer__navIcon,
+.tg-surface .StoryViewer__slideInner--holding .StoryViewer__captionWrap,
+.tg-surface .StoryViewer__slideInner--holding .StoryViewer__composer,
+.tg-surface .StoryViewer__slideInner--holding .StoryViewer__footer {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.tg-surface .StoryViewer__mediaBox {
+  position: absolute;
+  inset: 0;
+}
+.tg-surface .StoryViewer__media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tg-surface .StoryViewer__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.55);
+  background: #101010;
+}
+
+/* ── preview slide (partially visible neighbour peer) ─────────────────────── */
+.tg-surface .StoryViewer__preview {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  overflow: hidden;
+  padding: 0;
+  border: none;
+  border-radius: 0.625rem;
+  background: #000;
+  cursor: pointer;
+}
+.tg-surface .StoryViewer__previewMedia {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tg-surface .StoryViewer__previewMedia--empty {
+  background: #181818;
+}
+.tg-surface .StoryViewer__previewScrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+.tg-surface .StoryViewer__previewInner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  color: #fff;
+}
+.tg-surface .StoryViewer__previewName {
+  overflow: hidden;
+  max-width: 90%;
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-medium, 500);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* rounded top scrim behind the header + progress (@mixin story-header) */
+.tg-surface .StoryViewer__scrimTop {
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5rem;
+  border-radius: 0.625rem 0.625rem 0 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
+}
+
+/* ── segmented progress (StoryProgress.module.scss) ───────────────────────── */
+.tg-surface .StoryViewer__indicators {
+  position: absolute;
+  z-index: 5;
+  top: 0.5rem;
+  left: 0;
+  display: flex;
+  width: 100%;
+  padding: 0 0.375rem;
+}
+.tg-surface .StoryViewer__seg {
+  position: relative;
+  overflow: hidden;
+  flex: 1 1 auto;
+  height: 0.1875rem;
+  margin: 0 0.125rem;
+  border-radius: 0.125rem;
+  background: rgba(255, 255, 255, 0.25);
+}
+.tg-surface .StoryViewer__seg--viewed {
+  background: #fff;
+}
+.tg-surface .StoryViewer__seg--active {
+  background: rgba(255, 255, 255, 0.5);
+}
+.tg-surface .StoryViewer__segInner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.125rem;
+  background: #fff;
+  transform: translateX(-100%);
+  transform-origin: 0 50%;
+}
+/* photo (or failed video) — the CSS keyframe drives the fill AND the advance.
+   The 6s here is only a fallback; the real duration is set inline per-item. */
+.tg-surface .StoryViewer__segInner:not(.StoryViewer__segInner--video) {
+  animation: tgstory-progress 6s linear forwards;
+}
+.tg-surface .StoryViewer__segInner--paused {
+  animation-play-state: paused;
+}
+/* playing video — JS sets the transform from real playback time */
+.tg-surface .StoryViewer__segInner--video {
+  animation: none;
+  transition: transform 120ms linear;
+}
+@keyframes tgstory-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* ── peer header (.sender) ────────────────────────────────────────────────── */
+.tg-surface .StoryViewer__header {
+  position: absolute;
+  z-index: 6;
+  top: 1.1rem;
+  right: 0.625rem;
+  left: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff;
+}
+.tg-surface .StoryViewer__sender {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+.tg-surface .StoryViewer__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+.tg-surface .StoryViewer__name {
+  overflow: hidden;
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-medium, 500);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tg-surface .StoryViewer__metaRow {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+.tg-surface .StoryViewer__metaItem {
+  overflow: hidden;
+  font-size: 0.8125rem;
+  color: rgba(242, 242, 242, 0.85);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* dot separator between meta chips (reference .storyMeta + .storyMeta) */
+.tg-surface .StoryViewer__metaItem + .StoryViewer__metaItem {
+  margin-inline-start: 0.375rem;
+}
+.tg-surface .StoryViewer__metaItem + .StoryViewer__metaItem::before {
+  content: "";
+  position: relative;
+  top: -0.0625rem;
+  display: inline-block;
+  width: 0.1875rem;
+  height: 0.1875rem;
+  margin-inline-end: 0.375rem;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+}
+.tg-surface .StoryViewer__metaFwd {
+  color: #fff;
+}
+.tg-surface .StoryViewer__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-start: auto;
+}
+.tg-surface .StoryViewer__who {
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  white-space: nowrap;
+}
+.tg-surface .StoryViewer__btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: #fff;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.9;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+.tg-surface .StoryViewer__btn:hover,
+.tg-surface .StoryViewer__btn--active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* 3-dot menu dropdown (portaled to <body> with a full-screen backdrop) */
+.tg-surface .StoryViewer__menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 129;
+}
+.tg-surface .StoryViewer__menu {
+  position: fixed;
+  z-index: 130;
+  min-width: 11rem;
+  padding: 0.375rem;
+  border-radius: 0.75rem;
+  background: #2b2b2b;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+.tg-surface .StoryViewer__menuItem {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  color: #fff;
+  text-align: start;
+  background: none;
+  cursor: pointer;
+}
+.tg-surface .StoryViewer__menuItem:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.tg-surface .StoryViewer__menuItem--danger {
+  color: #ff5b5b;
+}
+
+/* ── tap-left / tap-right navigation zones (.navigate .prev/.next) ────────── */
+.tg-surface .StoryViewer__nav {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  width: 50%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  outline: none;
+}
+.tg-surface .StoryViewer__nav--prev {
+  left: 0;
+  justify-content: flex-start;
+  padding-left: 0.5rem;
+}
+.tg-surface .StoryViewer__nav--next {
+  right: 0;
+  justify-content: flex-end;
+  padding-right: 0.5rem;
+}
+.tg-surface .StoryViewer__navIcon {
+  width: 2rem;
+  height: 2rem;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.tg-surface .StoryViewer__nav:hover .StoryViewer__navIcon {
+  opacity: 0.55;
+}
+
+/* ── caption (StoryCaption.tsx): clamp to 3 lines → expand ────────────────── */
+.tg-surface .StoryViewer__captionBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+.tg-surface .StoryViewer__captionWrap {
+  pointer-events: none;
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  bottom: 3.5rem;
+  left: 0;
+  padding: 2.5rem 1rem 0.5rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 70%, transparent 100%);
+}
+.tg-surface .StoryViewer__captionWrap--expanded {
+  bottom: 3.5rem;
+  max-height: 60%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.tg-surface .StoryViewer__caption {
+  pointer-events: auto;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: #fff;
+}
+.tg-surface .StoryViewer__captionWrap--clamped .StoryViewer__caption {
+  cursor: pointer;
+}
+.tg-surface .StoryViewer__captionText {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* clamped state — the inline WebkitLineClamp count activates the box clamp */
+.tg-surface .StoryViewer__captionWrap--clamped .StoryViewer__captionText {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tg-surface .StoryViewer__captionWrap--expanded .StoryViewer__captionText {
+  overflow-y: auto;
+  max-height: 100%;
+}
+.tg-surface .StoryViewer__caption a {
+  color: #fff;
+  text-decoration: underline;
+}
+.tg-surface .StoryViewer__caption a:hover {
+  text-decoration: none;
+}
+.tg-surface .StoryViewer__showMore {
+  pointer-events: auto;
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.5rem;
+  padding: 0;
+  border: none;
+  font-weight: var(--font-weight-medium, 500);
+  color: #fff;
+  background: none;
+  cursor: pointer;
+}
+
+/* ── reply composer + heart reaction ──────────────────────────────────────── */
+.tg-surface .StoryViewer__composer {
+  position: absolute;
+  z-index: 6;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 3.5rem;
+  padding: 0 0.5rem;
+  background: rgba(20, 20, 20, 0.85);
+}
+.tg-surface .StoryViewer__composerInput {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.tg-surface .StoryViewer__composerInput input {
+  width: 100%;
+  height: 2.5rem;
+  padding: 0 0.875rem;
+  border: none;
+  border-radius: 1.25rem;
+  font-size: 0.9375rem;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+.tg-surface .StoryViewer__composerInput input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+.tg-surface .StoryViewer__heart {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  background: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.tg-surface .StoryViewer__heart:hover {
+  transform: scale(1.1);
+}
+.tg-surface .StoryViewer__heart--on {
+  color: #ff375f;
+}
+.tg-surface .StoryViewer__heart--on svg {
+  fill: currentColor;
+}
+
+/* ── own-story views footer (StoryFooter.tsx) ─────────────────────────────── */
+.tg-surface .StoryViewer__footer {
+  position: absolute;
+  z-index: 6;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  height: 3.5rem;
+  padding: 0 0.5rem;
+  color: #fff;
+  background: rgba(20, 20, 20, 0.85);
+}
+/* the whole views summary is one tap target → opens the viewers list */
+.tg-surface .StoryViewer__viewInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  color: #fff;
+  background: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.tg-surface .StoryViewer__viewInfo:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+/* recent-viewer avatar strip (overlapping discs) */
+.tg-surface .StoryViewer__viewAvatars {
+  display: inline-flex;
+  align-items: center;
+}
+.tg-surface .StoryViewer__viewAvatar {
+  position: relative;
+  display: inline-block;
+  border-radius: 50%;
+  /* a thin dark rim so overlapping avatars read as separate discs */
+  box-shadow: 0 0 0 2px rgba(20, 20, 20, 0.95);
+}
+.tg-surface .StoryViewer__viewAvatar > * {
+  display: block;
+}
+.tg-surface .StoryViewer__views {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  font-size: 0.9375rem;
+}
+.tg-surface .StoryViewer__footerReacts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #ff375f;
+}
+/* a non-heart reaction shown inside the composer's reaction button */
+.tg-surface .StoryViewer__heartEmoji {
+  font-size: 1.375rem;
+  line-height: 1;
+}
+
+/* ── own-story viewers list (StoryViewModal.tsx) ──────────────────────────── */
+.tg-surface .StoryViewer__viewsBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 131;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+.tg-surface .StoryViewer__viewsSheet {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 24rem;
+  max-height: min(70vh, 32rem);
+  margin: 0 0.75rem 4rem;
+  border-radius: 0.875rem;
+  background: #1c1c1d;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.tg-surface .StoryViewer__viewsHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  height: 3rem;
+  padding: 0 0.5rem 0 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tg-surface .StoryViewer__viewsTitle {
+  flex: 1 1 auto;
+  font-size: 1rem;
+  font-weight: var(--font-weight-medium, 500);
+  color: #fff;
+}
+.tg-surface .StoryViewer__viewsClose {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  background: none;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+.tg-surface .StoryViewer__viewsClose:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+}
+.tg-surface .StoryViewer__viewsList {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0.375rem;
+}
+.tg-surface .StoryViewer__viewsState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9375rem;
+}
+.tg-surface .StoryViewer__viewer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4375rem 0.625rem;
+  border-radius: 0.625rem;
+}
+.tg-surface .StoryViewer__viewer:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.tg-surface .StoryViewer__viewerMeta {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.25;
+}
+.tg-surface .StoryViewer__viewerName {
+  overflow: hidden;
+  font-size: 0.9375rem;
+  color: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tg-surface .StoryViewer__viewerDate {
+  overflow: hidden;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.55);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tg-surface .StoryViewer__viewerReaction {
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+/* ── toast ────────────────────────────────────────────────────────────────── */
+.tg-surface .StoryViewer__toast {
+  position: absolute;
+  z-index: 9;
+  left: 50%;
+  bottom: 2rem;
+  transform: translateX(-50%);
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.85);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* ── mobile: single slide, full-bleed, composer bar honours safe area ─────── */
+@media (max-width: 600px) {
+  .tg-surface .StoryViewer__slideInner {
+    border-radius: 0;
+  }
+}
