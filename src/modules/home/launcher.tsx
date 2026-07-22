@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, ChevronDown, RotateCw, LineChart } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
+import { HAS_ONEC, ONEC_GATED } from "@/config/edition";
+import { OnecGate } from "./onec-gate";
 
 /**
  * «Аналитика бизнеса» — главный экран mini-app в ДБО Kapital Business.
@@ -69,7 +71,8 @@ export function LauncherPage() {
       </div>
 
       <div className="flex flex-col gap-5">
-        {/* Финансовая аналитика — единый блок: шапка + вход в дашборд + метрики-колонки */}
+        {/* Финансовая аналитика (1С): full — блок, gated — гейт-карточка, off — скрыто */}
+        {HAS_ONEC ? (
         <div className="rounded-[24px] bg-white">
           {/* Шапка блока */}
           <div className="flex flex-wrap items-center justify-between gap-4 px-7 pb-5 pt-6">
@@ -148,28 +151,48 @@ export function LauncherPage() {
             </div>
           </div>
         </div>
+        ) : ONEC_GATED ? (
+          <OnecGate />
+        ) : null}
 
         {/* ЭСФ / Налоги / Отчёты — кликабельные блоки-разделы */}
         <div className="grid grid-cols-3 gap-5">
           <SectionBlock
             title="Электронные счета-фактуры"
-            subtitle="Взаиморасчёты с контрагентами"
+            subtitle={HAS_ONEC ? "Взаиморасчёты с контрагентами" : "Счёт-фактуры и акты"}
             onClick={() => nav("/documents")}
           >
-            <div className="space-y-2.5 text-[15px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[#83888B]">Нам должны</span>
-                <span className="font-semibold text-[#101010]">86,2 млн</span>
+            {HAS_ONEC ? (
+              <div className="space-y-2.5 text-[15px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#83888B]">Нам должны</span>
+                  <span className="font-semibold text-[#101010]">86,2 млн</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#83888B]">Мы должны</span>
+                  <span className="font-semibold text-[#101010]">61,3 млн</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#F24835]">Просрочено</span>
+                  <span className="font-semibold text-[#F24835]">32,2 млн</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[#83888B]">Мы должны</span>
-                <span className="font-semibold text-[#101010]">61,3 млн</span>
+            ) : (
+              <div className="space-y-2.5 text-[15px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#83888B]">Входящие</span>
+                  <span className="font-semibold text-[#101010]">14</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#83888B]">Исходящие</span>
+                  <span className="font-semibold text-[#101010]">9</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#F48C2C]">Ожидают подписи</span>
+                  <span className="font-semibold text-[#F48C2C]">3</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[#F24835]">Просрочено</span>
-                <span className="font-semibold text-[#F24835]">32,2 млн</span>
-              </div>
-            </div>
+            )}
           </SectionBlock>
 
           <SectionBlock
@@ -216,7 +239,8 @@ export function LauncherPage() {
           </SectionBlock>
         </div>
 
-        {/* Ликвидность */}
+        {/* Ликвидность (1С) — только при подключённом 1С */}
+        {HAS_ONEC && (
         <Card>
           <div className="flex items-center justify-between">
             <h2 className="text-[22px] font-bold text-[#101010]">Ликвидность</h2>
@@ -241,6 +265,7 @@ export function LauncherPage() {
           </div>
           <div className="mt-3 text-[14px] text-[#9DA4A8]">Прогноз по данным учёта из 1С</div>
         </Card>
+        )}
       </div>
     </div>
   );

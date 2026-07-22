@@ -4,6 +4,7 @@ import { ModulePage } from "@/modules/module-page";
 import { FinDashboard } from "@/modules/dashboard/fin/fin-dashboard";
 import { SoliqRouter } from "@/modules/soliq";
 import { LauncherPage } from "@/modules/home/launcher";
+import { HAS_ONEC } from "@/config/edition";
 
 // Detail pages — lazy so they're loaded only when the user navigates.
 const DocumentDetailPage = lazy(() =>
@@ -39,8 +40,8 @@ export function TabRoutes() {
       <Route path="/documents/create" element={<Lazy><DocumentCreatePage /></Lazy>} />
       <Route path="/documents/:id" element={<Lazy><DocumentDetailPage /></Lazy>} />
 
-      {/* Финансовая аналитика */}
-      <Route path="/dashboard" element={<FinDashboard />} />
+      {/* Финансовая аналитика (1С) — доступна только при подключённом 1С */}
+      <Route path="/dashboard" element={HAS_ONEC ? <FinDashboard /> : <Navigate to="/" replace />} />
 
       {/* Страница банка отключена в пилоте — на неё нельзя перейти */}
       <Route path="/bank" element={<Navigate to="/" replace />} />
